@@ -3,7 +3,8 @@
 ## Setup
 
 1. Clone repo:  
-   `git clone https://github.com/JuanMaParraU/a2a-mcp-langgraph-agent-local.git && cd a2a-mcp-langgraph-agent-local`
+   `git clone https://github.com/JuanMaParraU/a2a-mcp-langgraph-agent-local.git`
+    `cd a2a-mcp-langgraph-agent-local`
 
 2. Using uv:  
    `uv sync`  # creates .venv automatically and installs dependencies

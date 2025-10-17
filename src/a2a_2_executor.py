@@ -11,7 +11,7 @@ from a2a.types import (
     UnsupportedOperationError,
 )
 from a2a.utils.errors import ServerError
-from langA2A import langG_agent #import the actual agent class (langGraph)
+from a2a_3_agent import langG_agent #import the actual agent class (langGraph)
 """
 This is the executor class which is wrapped by the startlette app/server. It call imports
 the actual agent class from LangGraph (or similar). It always needs to:

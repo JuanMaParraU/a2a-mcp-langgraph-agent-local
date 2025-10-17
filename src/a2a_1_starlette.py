@@ -3,7 +3,7 @@ from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.types import AgentCapabilities, AgentCard, AgentSkill
-from 2_a2a_executor import LangGraphAgentExecutor
+from a2a_2_executor import LangGraphAgentExecutor
 import logging
 
 
