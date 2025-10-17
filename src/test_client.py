@@ -62,7 +62,7 @@ async def main() -> None:
         print("A2AClient initialized >>>>>>>>>>>>>>>>>>>>")
 
         #query to the agent
-        query = "What tools do you have available and how to use them?"
+        query = "Use duckduck search to get the temperature in LA"
 
         message_payload = Message(
             role=Role.user,

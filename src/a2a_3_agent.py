@@ -54,7 +54,7 @@ class langG_agent:
         """
     )
     def __init__(self):
-        self.model = ChatOllama(model="gpt-oss", temperature= 0)
+        self.model = ChatOllama(model="mistral", temperature= 0)
         self.tools = [duckduckgo_search]
         self.graph = create_react_agent(
             self.model,
