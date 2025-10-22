@@ -1,10 +1,9 @@
 import uuid
 import asyncio
 import httpx
-from a2a.types import TransportProtocol
 from a2a.client.client_factory import ClientFactory
 from a2a.client.client import ClientConfig
-from a2a.client import A2ACardResolver, A2AClient
+from a2a.client import A2ACardResolver
 from a2a.types import (
     AgentCard,
     Message,

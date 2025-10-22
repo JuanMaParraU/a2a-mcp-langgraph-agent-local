@@ -6,34 +6,15 @@ from langgraph.prebuilt import create_react_agent
 from typing import Any, List, Literal
 from langchain_core.messages import AIMessage, ToolMessage
 from pydantic import BaseModel
-from langchain_core.tools import tool
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.runnables import RunnableConfig
 from collections.abc import AsyncIterable
+from langchain_mcp_adapters.client import MultiServerMCPClient
+import asyncio
 
 os.environ["NO_PROXY"] = "127.0.0.1,localhost"
 
 memory = MemorySaver()
-
-
-# Define DuckDuckGo tool manually using the API wrapper
-
-@tool(description="Search the web using DuckDuckGo.")
-def duckduckgo_search(query: str) -> str:
-    logging.info(f" 🔧🔧🔧 **** Called duckduckgo_search with: {query}")
-    try:
-        search = DuckDuckGoSearchAPIWrapper()
-        results = search.run(query)
-        if results:
-            return {"result": results}
-        else:
-            return "No results found."
-    except Exception as e:
-        logging.error(f"Error occurred in duckduckgo_search: {str(e)}")
-        return f"Error: {str(e)}"
-
-
-
 
 class ResponseFormat(BaseModel):
     """Respond to the user in this format."""
@@ -53,9 +34,12 @@ class langG_agent:
         Set response status to completed if the request is complete.
         """
     )
+
+
+
     def __init__(self):
         self.model = ChatOllama(model="mistral", temperature= 0)
-        self.tools = [duckduckgo_search]
+        self.tools = asyncio.run(self._get_mcp_tools())
         self.graph = create_react_agent(
             self.model,
             tools=self.tools,
@@ -64,6 +48,7 @@ class langG_agent:
             prompt=self.SYSTEM_INSTRUCTION,
             response_format=ResponseFormat,
         )
+
     def invoke(self, query, context_id):
         config: RunnableConfig = {"configurable": {"thread_id": context_id}}
         self.graph.invoke({"messages": [("user", query)]}, config)
@@ -125,3 +110,16 @@ class langG_agent:
                 "Please try again."
             ),
         }
+    async def _get_mcp_tools(self):
+        mcp_client = MultiServerMCPClient(
+                {
+                    "research": {
+                        "url": "http://localhost:8000/mcp/",  # ✅ Make sure port matches your server
+                        "transport": "streamable_http",
+                    }
+                }
+            )
+
+        tools = await mcp_client.get_tools()
+        print("\n🔧 Available Tools:", [tool.name for tool in tools])
+        return tools
