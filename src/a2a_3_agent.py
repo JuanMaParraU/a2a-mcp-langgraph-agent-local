@@ -10,7 +10,6 @@ from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.runnables import RunnableConfig
 from collections.abc import AsyncIterable
 from langchain_mcp_adapters.client import MultiServerMCPClient
-import asyncio
 
 os.environ["NO_PROXY"] = "127.0.0.1,localhost"
 
@@ -35,30 +34,41 @@ class langG_agent:
         """
     )
 
-
-
     def __init__(self):
-        self.model = ChatOllama(model="mistral", temperature= 0)
-        self.tools = asyncio.run(self._get_mcp_tools())
-        self.graph = create_react_agent(
-            self.model,
-            tools=self.tools,
-            checkpointer=memory,
-            debug=True,
-            prompt=self.SYSTEM_INSTRUCTION,
-            response_format=ResponseFormat,
-        )
+        self.model = ChatOllama(model="mistral-nemo", temperature=0)
+        self.tools = None
+        self.graph = None
+        self._initialized = False
 
-    def invoke(self, query, context_id):
+    async def _initialize(self):
+        """Initialize async components."""
+        if not self._initialized:
+            self.tools = await self._get_mcp_tools()
+            self.graph = create_react_agent(
+                self.model,
+                tools=self.tools,
+                checkpointer=memory,
+                debug=True,
+                prompt=self.SYSTEM_INSTRUCTION,
+                response_format=ResponseFormat,
+            )
+            self._initialized = True    
+
+    async def invoke(self, query, context_id):
+        """Async invoke method."""
+        await self._initialize()
         config: RunnableConfig = {"configurable": {"thread_id": context_id}}
-        self.graph.invoke({"messages": [("user", query)]}, config)
+        await self.graph.ainvoke({"messages": [("user", query)]}, config)
         return self.get_agent_response(config)
     
     async def stream(self, query, context_id) -> AsyncIterable[dict[str, Any]]:
+        """Async stream method - FIXED to use astream instead of stream."""
+        await self._initialize()
         inputs = {"messages": [("user", query)]}
         config: RunnableConfig = {"configurable": {"thread_id": context_id}}
 
-        for item in self.graph.stream(inputs, config, stream_mode="values"):
+        # ✅ FIXED: Changed from .stream() to .astream() and for to async for
+        async for item in self.graph.astream(inputs, config, stream_mode="values"):
             message = item["messages"][-1]
             if (
                 isinstance(message, AIMessage)
@@ -110,15 +120,17 @@ class langG_agent:
                 "Please try again."
             ),
         }
+    
     async def _get_mcp_tools(self):
+        """Get tools from MCP server."""
         mcp_client = MultiServerMCPClient(
-                {
-                    "research": {
-                        "url": "http://localhost:8000/mcp/",  # ✅ Make sure port matches your server
-                        "transport": "streamable_http",
-                    }
+            {
+                "research": {
+                    "url": "http://localhost:8000/mcp/",
+                    "transport": "streamable_http",
                 }
-            )
+            }
+        )
 
         tools = await mcp_client.get_tools()
         print("\n🔧 Available Tools:", [tool.name for tool in tools])
