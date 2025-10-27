@@ -25,101 +25,109 @@ This project demonstrates a complete agentic AI stack running entirely on your m
 
 - **Python 3.10+**
 - **8GB+ RAM** (16GB recommended for larger models)
+- **tmux** (for running multiple services)
 - **macOS, Linux, or Windows with WSL**
 
-### Step 1: Install Ollama
+### Step 1: Install Dependencies
 
-Ollama lets you run powerful LLMs locally, eliminating API costs and latency.
+**Install tmux:**
+
+macOS:
+```bash
+brew install tmux
+```
+
+Ubuntu/Debian:
+```bash
+sudo apt-get install tmux
+```
 
 **Install Ollama:**
 ```bash
 curl -fsSL https://ollama.com/install.sh | sh
 ```
 
-**Start the Ollama server:**
+**Start Ollama and download model:**
 ```bash
 ollama serve
-```
-
-**Download the model** (mistral-nemo with tool-calling support):
-```bash
 ollama run mistral-nemo
 ```
 
-> **Why mistral-nemo?** It's instruct-tuned with strong tool-calling capabilities, making it ideal for agentic workflows.
-
-### Step 2: Clone the Repository
+### Step 2: Clone and Setup
 
 ```bash
 git clone https://github.com/JuanMaParraU/a2a-mcp-langgraph-agent-local.git
 cd a2a-mcp-langgraph-agent-local
 ```
 
-### Step 3: Set Up Python Environment
+**Setup Python environment:**
 
-**Option A: Using `uv` (recommended)** — faster dependency resolution:
+Using `uv` (recommended):
 ```bash
-uv sync  # creates .venv and installs dependencies automatically
+uv sync
 source .venv/bin/activate
 ```
 
-**Option B: Using standard venv:**
+Using standard venv:
 ```bash
 python3 -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Step 4: Run Your First Agent
+### Step 3: Launch the System
 
-**Start with a simple single-agent example:**
 ```bash
-python examples/single_agent.py
+chmod +x start_agents_tmux.sh
+./start_agents_tmux.sh
 ```
 
-**Expected output:**
+This launches three services in separate tmux windows:
+- **Window 0 (MCP):** MCP Server providing tools
+- **Window 1 (Agent):** Agent Server with A2A + LangGraph
+- **Window 2 (Client):** Interactive client for sending tasks
+
+---
+
+## 🎮 Managing the Session
+
+### Switching Between Windows
+
 ```
-🤖 Agent initialized
-📊 Processing task...
-✅ Task completed: [result details]
+Ctrl+b then 0  →  MCP Server
+Ctrl+b then 1  →  Agent Server
+Ctrl+b then 2  →  Client
+```
+
+Or cycle through:
+```
+Ctrl+b then n  →  Next window
+Ctrl+b then p  →  Previous window
+```
+
+### Detach and Reattach
+
+**Detach** (leave running in background):
+```
+Ctrl+b then d
+```
+
+**Reattach:**
+```bash
+tmux attach -t agentic-ai
+```
+
+### Stop the System
+
+```bash
+tmux kill-session -t agentic-ai
 ```
 
 ---
 
-## 📚 Examples
+## 📁 Project Structure
 
-### Example 1: Single Agent with Tool Access
-
-```bash
-python examples/single_agent.py
-```
-
-Demonstrates:
-- Basic LangGraph state management
-- MCP tool integration (file reading)
-- Local LLM reasoning via Ollama
-
-### Example 2: Multi-Agent Collaboration (A2A)
-
-```bash
-python examples/multi_agent_a2a.py
-```
-
-Demonstrates:
-- Two agents communicating via A2A protocol
-- Task delegation between agents
-- Shared state management
-
-### Example 3: Custom MCP Tool
-
-```bash
-python examples/custom_mcp_tool.py
-```
-
-Demonstrates:
-- Creating your own MCP-compatible tool
-- Registering tools with the agent
-- Tool discovery and execution
+For detailed file descriptions, customization options, and examples, see the [src/ folder documentation](src/README.md).
 
 ---
 
@@ -150,46 +158,6 @@ Demonstrates:
 
 ---
 
-## 🔧 Configuration
-
-### Changing the Model
-
-Edit `config.yaml` to use different Ollama models:
-
-```yaml
-model:
-  name: "llama3.2"  # or mistral, codellama, etc.
-  temperature: 0.7
-```
-
-Available models: `ollama list`
-
-### Adding MCP Tools
-
-Create a new tool in `tools/`:
-
-```python
-from mcp import Tool
-
-class MyCustomTool(Tool):
-    name = "my_tool"
-    description = "Does something useful"
-    
-    async def execute(self, **kwargs):
-        # Your tool logic here
-        return result
-```
-
-Register it in `agent_config.py`:
-
-```python
-from tools.my_tool import MyCustomTool
-
-tools = [MyCustomTool()]
-```
-
----
-
 ## 🐛 Troubleshooting
 
 ### Ollama Connection Issues
@@ -205,74 +173,44 @@ ollama serve
 
 **Error:** `Model 'mistral-nemo' not found`
 
-**Solution:** Download the model first:
+**Solution:**
 ```bash
 ollama pull mistral-nemo
 ```
 
-### Out of Memory
-
-**Error:** Process killed or memory errors
-
-**Solution:** 
-- Use a smaller model: `ollama pull llama3.2:3b`
-- Reduce context window in `config.yaml`
-- Close other applications
-
 ### Import Errors
 
-**Error:** `ModuleNotFoundError: No module named 'langgraph'`
-
-**Solution:** Ensure virtual environment is activated and dependencies installed:
+**Solution:** Ensure virtual environment is activated:
 ```bash
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
----
+### tmux Session Already Exists
 
-## 🧪 Development
-
-### Running Tests
-
+**Solution:**
 ```bash
-pytest tests/
+tmux kill-session -t agentic-ai
+./start_agents_tmux.sh
 ```
-
-### Code Formatting
-
-```bash
-black .
-ruff check .
-```
-
-### Adding New Agents
-
-1. Create agent file in `agents/`
-2. Define state schema
-3. Implement reasoning logic
-4. Register in LangGraph
-
-See `agents/example_agent.py` for template.
 
 ---
 
 ## 🤝 Contributing
 
-Contributions welcome! Areas we're particularly interested in:
+Contributions welcome! Areas of interest:
 
 - 🔭 **Observability tools** — visualize agent graphs and state
 - 🧩 **Advanced A2A patterns** — negotiation, consensus protocols
 - ⚙️ **New MCP tools** — database access, API integrations
-- 🧠 **Model benchmarks** — performance comparisons for different tasks
+- 🧠 **Model benchmarks** — performance comparisons
 - 📚 **Documentation** — tutorials, examples, explanations
 
 **How to contribute:**
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+2. Create a feature branch
 3. Make your changes
-4. Add tests if applicable
-5. Submit a Pull Request
+4. Submit a Pull Request
 
 **Questions or ideas?** [Open an issue](https://github.com/JuanMaParraU/a2a-mcp-langgraph-agent-local/issues)
 
@@ -280,7 +218,8 @@ Contributions welcome! Areas we're particularly interested in:
 
 ## 📖 Learn More
 
-- **Blog Post:** [Building Fully Local Agentic AI](https://your-blog-link.com) — Architecture and concepts explained
+- **Blog Post:** [Building Fully Local Agentic AI](https://your-blog-link.com)
+- **Source Code Details:** [src/ folder documentation](src/README.md)
 - **LangGraph Docs:** [langchain-ai.github.io/langgraph](https://langchain-ai.github.io/langgraph/)
 - **MCP Specification:** [Anthropic Model Context Protocol](https://www.anthropic.com/news/model-context-protocol)
 - **Ollama:** [ollama.ai](https://ollama.ai)
@@ -290,15 +229,6 @@ Contributions welcome! Areas we're particularly interested in:
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) file for details
-
----
-
-## 🙏 Acknowledgments
-
-Built with:
-- [LangGraph](https://github.com/langchain-ai/langgraph) by LangChain
-- [Ollama](https://ollama.ai) for local model serving
-- MCP and A2A protocol specifications
 
 ---
 
