@@ -78,8 +78,8 @@ pip install -r requirements.txt
 ### Step 3: Launch the System
 
 ```bash
-chmod +x start_agents_tmux.sh
-./start_agents_tmux.sh
+chmod +x start_agents.sh
+./start_agents.sh
 ```
 
 This launches three services in separate tmux windows:
