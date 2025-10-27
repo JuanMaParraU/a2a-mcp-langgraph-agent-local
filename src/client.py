@@ -17,7 +17,7 @@ BASE_URL = "http://localhost:9998"
 # Set timeout values
 timeout_config = httpx.Timeout(
     connect=10.0,  # time to establish connection
-    read=60.0,     # time to wait for agent response
+    read=120.0,     # time to wait for agent response
     write=10.0,    # time to send request
     pool=5.0       # time to wait for a connection from the pool
 )

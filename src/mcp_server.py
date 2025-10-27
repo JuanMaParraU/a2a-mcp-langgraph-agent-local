@@ -1,5 +1,3 @@
-# tool_server.py
-
 import asyncio
 from functools import partial
 from mcp.server.fastmcp import FastMCP
@@ -11,6 +9,7 @@ import sys
 import atexit
 import os
 from ddgs import DDGS  
+import arxiv
 
 os.environ["PORT"] = "8000"
 
@@ -19,38 +18,7 @@ logging.basicConfig(level=logging.INFO)
 # Initialize FastMCP server with a service name
 mcp = FastMCP("ResearchTools")
 
-# DuckDuckGo search tool
-search = DuckDuckGoSearchAPIWrapper()
-'''
-@mcp.tool()
-async def duckduckgo_search(query: str) -> str:
-    #"""Search the web using DuckDuckGo."""
-    logging.info(f" ****  🔧 🔧 🔧 Called duckduckgo_search with: {query}")
-    try:
-        # The search tool may expose either an async API (`arun`) or a sync API (`run`).
-        # Some tool wrappers (StructuredTool) raise NotImplementedError when called
-        # synchronously, so prefer the async API when available and fall back to
-        # running the blocking `run` in a thread executor.
-        loop = asyncio.get_event_loop()
-
-        if hasattr(search, "arun"):
-            logging.debug("Using async arun() of the search tool")
-            results = await search.arun(query)
-        elif hasattr(search, "run"):
-            logging.debug("Using sync run() of the search tool inside executor")
-            results = await loop.run_in_executor(None, partial(search.run, query))
-        else:
-            raise RuntimeError("search tool does not expose arun or run methods")
-
-        if results:
-            return results
-        return "No results found."
-    except Exception as e:
-        logging.error(f"Error occurred in duckduckgo_search: {str(e)}")
-    return f"Error: {str(e)}"
-'''
-
-
+# DuckDuckGo search tool -- running async with a loop executor
 @mcp.tool()
 async def duckduckgo_search(query: str) -> str:
     """Search the web using DuckDuckGo."""
@@ -97,6 +65,70 @@ async def wikipedia_search(query: str) -> str:
     except Exception as e:
         logging.error(f"Error occurred in wikipedia_search: {str(e)}")
         return f"Error: {str(e)}"
+
+# arXiv search tool -- running async with a loop executor
+@mcp.tool()
+async def arxiv_search(query: str, max_results: int = 5) -> str:
+    """Search arXiv for academic papers and research articles.
+    
+    Args:
+        query: Search query for arXiv papers
+        max_results: Maximum number of results to return (default: 5)
+    """
+    logging.info(f" *****  🔧 🔧 🔧 Called arxiv_search with: {query}")
+    try:
+        loop = asyncio.get_event_loop()
+        
+        def _search():
+            try:
+                # Create arXiv client and search
+                client = arxiv.Client()
+                search = arxiv.Search(
+                    query=query,
+                    max_results=5,
+                    sort_by=arxiv.SortCriterion.SubmittedDate,
+                    sort_order=arxiv.SortOrder.Descending,
+                )
+                
+                results = list(client.results(search))
+                
+                logging.info(f"📊 Retrieved {len(results)} results from arXiv")
+                
+                if results:
+                    formatted = []
+                    for paper in results:
+                        # Format each paper
+                        authors = ", ".join([author.name for author in paper.authors[:3]])
+                        if len(paper.authors) > 3:
+                            authors += " et al."
+                        
+                        formatted.append(
+                            f"**{paper.title}**\n"
+                            f"Authors: {authors}\n"
+                            f"Published: {paper.published.strftime('%Y-%m-%d')}\n"
+                            f"Summary: {paper.summary[:300]}...\n"
+                            f"PDF: {paper.pdf_url}\n"
+                            f"arXiv ID: {paper.entry_id}\n"
+                        )
+                    
+                    final_result = "\n---\n".join(formatted)
+                    logging.info(f"✅ Returning {len(formatted)} formatted papers")
+                    return final_result
+                
+                logging.warning("⚠️ No results found from arXiv")
+                return "No papers found."
+                
+            except Exception as e:
+                logging.error(f"❌ arXiv search error: {str(e)}")
+                return f"Search error: {str(e)}"
+        
+        results = await loop.run_in_executor(None, _search)
+        return results
+        
+    except Exception as e:
+        logging.error(f"❌ Error occurred in arxiv_search: {str(e)}")
+        return f"Error: {str(e)}"
+
 
 # Graceful shutdown handlers
 def cleanup():
