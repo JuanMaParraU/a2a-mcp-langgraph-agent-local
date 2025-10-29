@@ -67,7 +67,6 @@ class langG_agent:
         inputs = {"messages": [("user", query)]}
         config: RunnableConfig = {"configurable": {"thread_id": context_id}}
 
-        # ✅ FIXED: Changed from .stream() to .astream() and for to async for
         async for item in self.graph.astream(inputs, config, stream_mode="values"):
             message = item["messages"][-1]
             if (

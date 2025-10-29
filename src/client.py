@@ -83,7 +83,8 @@ async def main() -> None:
 
         except Exception as e:
             print("❌ Error:", e)
-
+        finally:
+            print("Client closed.")
 
 
 if __name__ == "__main__":
