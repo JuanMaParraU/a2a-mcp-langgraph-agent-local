@@ -225,6 +225,12 @@ Contributions welcome! Areas of interest:
 - **Ollama:** [ollama.ai](https://ollama.ai)
 
 ---
+## TODO 
+- Dynamic agent skills retrieval and definition via MCP query
+- Multi-agent workflows
+- Multi-step workflows 
+
+---
 
 ## 📄 License
 
