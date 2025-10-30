@@ -18,6 +18,47 @@ src/
 ```
 
 ---
+## Architecture
+```mermaid
+graph TB
+    User[👤 User]
+    Client[client.py<br/>A2A Client]
+    
+    subgraph A2A_Stack["🌐 A2A Agent Stack"]
+        Starlette[a2a_1_starlette.py<br/>HTTP Server Starlette<br/>• REST API endpoints<br/>• A2A protocol]
+        Executor[a2a_2_executor.py<br/>Task Execution Engine<br/>• Task lifecycle<br/>• Error handling]
+        Agent[a2a_3_agent.py<br/>LangGraph Agent Core<br/>• Agent reasoning<br/>• Ollama LLM backend<br/>• MCP client]
+    end
+    
+    subgraph MCP_Stack["🔌 MCP Tool Stack"]
+        MCP[mcp_server.py<br/>MCP Protocol Layer<br/>• Standardizes tool access<br/>• Formats responses<br/>• Tool discovery]
+        
+        subgraph Tools["⚙️ Actual Tools"]
+            DDG[🔍 DuckDuckGo<br/>Search]
+            ArXiv[📚 arXiv<br/>Search]
+            Wiki[📖 Wikipedia<br/>Search]
+        end
+    end
+    
+    Ollama[(🦙 Ollama<br/>Local LLM)]
+    
+    User -->|HTTP Request| Client
+    Client -->|POST /send_message| Starlette
+    Starlette -->|wraps| Executor
+    Executor -->|wraps| Agent
+    Agent -->|connects to| MCP
+    Agent -.->|reasoning| Ollama
+    MCP -->|wraps| Tools
+    MCP -->|executes| DDG
+    MCP -->|executes| ArXiv
+    MCP -->|executes| Wiki
+    
+    style A2A_Stack fill:#e3f2fd
+    style MCP_Stack fill:#fff3e0
+    style Tools fill:#f3e5f5
+    style User fill:#c8e6c9
+    style Ollama fill:#ffe0b2
+```
 
 ## 🔍 Detailed File Descriptions
 
@@ -191,7 +232,7 @@ python src/mcp_test_client.py
 │  │ • Exposes REST API endpoints                      │  │
 │  │ • Handles A2A protocol                            │  │
 │  └────────────────────┬──────────────────────────────┘  │
-│                       │ wraps                            │
+│                       │ wraps                           │
 │         ┌─────────────▼──────────────────────────────┐  │
 │         │  a2a_2_executor.py (Middle Layer)          │  │
 │         │  ┌──────────────────────────────────────┐  │  │
@@ -199,7 +240,7 @@ python src/mcp_test_client.py
 │         │  │ • Manages task lifecycle             │  │  │
 │         │  │ • Error handling & retries           │  │  │
 │         │  └───────────────┬──────────────────────┘  │  │
-│         │                  │ wraps                    │  │
+│         │                  │ wraps                   │  │
 │         │    ┌─────────────▼──────────────────────┐  │  │
 │         │    │ a2a_3_agent.py (Core)              │  │  │
 │         │    │ ┌──────────────────────────────┐   │  │  │
@@ -213,15 +254,27 @@ python src/mcp_test_client.py
 └─────────────────────────┬───────────────────────────────┘
                           │ connects to
                           ↓
-                 ┌─────────────────┐
-                 │ mcp_server.py   │
-                 │ (Tool Provider) │
-                 └─────────────────┘
+                 ┌──────────────────────────────────┐
+                 │ mcp_server.py (Tool Wrapper)     │
+                 │ ┌──────────────────────────────┐ │
+                 │ │ MCP Protocol Layer           │ │
+                 │ │ • Standardizes tool access   │ │
+                 │ │ • Formats responses          │ │
+                 │ │ • Tool discovery             │ │
+                 │ └────────────┬─────────────────┘ │
+                 │              │ wraps             │
+                 │   ┌──────────▼────────────────┐  │
+                 │   │ Actual Tools              │  │
+                 │   │ • DuckDuckGo Search       │  │
+                 │   │ • arXiv Search            │  │
+                 │   │ • Wikipedia Search        │  │
+                 │   └───────────────────────────┘  │
+                 └──────────────────────────────────┘
 
-User interaction:
-client.py → HTTP request → a2a_1_starlette.py → a2a_2_executor.py → a2a_3_agent.py → mcp_server.py
+User interaction flow:
+client.py → HTTP request → a2a_1_starlette.py → a2a_2_executor.py 
+          → a2a_3_agent.py → mcp_server.py → Actual Tools (DuckDuckGo, arXiv, etc.)
 ```
-
 ---
 
 ## 🚀 Quick Start Guide
