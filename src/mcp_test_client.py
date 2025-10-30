@@ -54,19 +54,35 @@ async def main():
                                 debug=False,
                                 prompt=system_prompt, 
                                 checkpointer=memory)
-    query = "Search arXiv for recent papers on large language models only resturning titles and authors."
-    # Stream mode "values" gives you the full state after each step
-    async for event in agent.astream({"messages": query}, config=config, stream_mode="values"):
-        # Get the messages from the current state
-        messages = event.get("messages", [])
-        if messages:
-            last_msg = messages[-1]
-            # Print each message as it comes
-            if hasattr(last_msg, "content") and last_msg.content:
-                print(f"\n{'='*50}")
-                print(f"Message Type: {type(last_msg).__name__}")
-                print(f"Content: {last_msg.content}")
-                print(f"{'='*50}\n")
+    
+    print("\n🤖 Multi-turn MCP Agent ready! Type 'quit' or 'exit' to end the conversation.\n")
+    
+    while True:
+        try:
+            user_input = input("You: ").strip()
+            if user_input.lower() in ['quit', 'exit', 'q']:
+                print("Goodbye!")
+                break
+            
+            if not user_input:
+                continue
+                
+            print("\nAgent: ", end="", flush=True)
+            
+            # Stream the agent's response
+            async for event in agent.astream({"messages": user_input}, config=config, stream_mode="values"):
+                messages = event.get("messages", [])
+                if messages:
+                    last_msg = messages[-1]
+                    if hasattr(last_msg, "content") and last_msg.content and isinstance(last_msg, AIMessage):
+                        print(last_msg.content)
+                        
+        except KeyboardInterrupt:
+            print("\n\nGoodbye!")
+            break
+        except Exception as e:
+            print(f"\nError: {e}")
+            continue
 asyncio.run(main())
 
 
