@@ -16,11 +16,25 @@ BASE_URL = "http://localhost:9998"
 
 # Set timeout values
 timeout_config = httpx.Timeout(
-    connect=10.0,  # time to establish connection
-    read=120.0,     # time to wait for agent response
-    write=10.0,    # time to send request
-    pool=5.0       # time to wait for a connection from the pool
+    connect=10.0,
+    read=120.0,
+    write=10.0,
+    pool=5.0
 )
+
+
+async def fetch_and_print_agent_card(resolver: A2ACardResolver) -> None:
+    """Fetch and display the agent card."""
+    try:
+        print("\n📋 Fetching agent card...")
+        agent_card = await resolver.get_agent_card()
+        print("\n" + "="*60)
+        print("Agent Card:")
+        print("="*60)
+        print(agent_card.model_dump_json(indent=2))
+        print("="*60 + "\n")
+    except Exception as e:
+        print(f"❌ Error fetching agent card: {e}\n")
 
 
 async def main() -> None:
@@ -33,58 +47,88 @@ async def main() -> None:
 
         final_agent_card_to_use: AgentCard | None = None
 
+        # Fetch agent card silently for client initialization
         try:
-            print(
-                f"Fetching public agent card from: {BASE_URL}"
-            )
             _public_card = await resolver.get_agent_card()
-            print("Fetched public agent card")
-            print(_public_card.model_dump_json(indent=2))
-
             final_agent_card_to_use = _public_card
-
+            print(f"✅ Connected to agent at {BASE_URL}")
         except Exception as e:
-            print(f"Error fetching public agent card: {e}")
-            raise RuntimeError("Failed to fetch public agent card")
+            print(f"❌ Error connecting to agent: {e}")
+            raise RuntimeError("Failed to connect to agent")
         
-    #### start communicating with the agent. 
+        # Initialize the A2A client
+        config = ClientConfig(httpx_client=httpx_client)
+        factory = ClientFactory(config)
+        client = factory.create(final_agent_card_to_use)
 
-        # 1. Create a ClientConfig (configure as needed)  
-        config = ClientConfig(httpx_client=httpx_client,)  
-        
-        # 2. Initialize the factory with the config  
-        factory = ClientFactory(config)  
-        
-        # 3. Create a client from the agent card  
-        client = factory.create(final_agent_card_to_use)  
+        print("\n" + "="*60)
+        print("🤖 Multi-turn A2A Agent ready!")
+        print("Type 'quit', 'exit', or 'q' to end the conversation.")
+        print("Type 'card' or 'agent card' to view the agent's capabilities.")
+        print("="*60 + "\n")
 
-        print("A2AClient initialized >>>>>>>>>>>>>>>>>>>>")
+        # Multi-turn conversation loop
+        while True:
+            try:
+                user_input = input("🔎 You: ").strip()
+                
+                if user_input.lower() in ['quit', 'exit', 'q']:
+                    print("\n👋 Goodbye!")
+                    break
+                
+                if user_input.lower() in ['card', 'agent card', 'show card']:
+                    await fetch_and_print_agent_card(resolver)
+                    continue
+                
+                if not user_input:
+                    continue
+                
+                message_payload = Message(
+                    role=Role.user,
+                    messageId=str(uuid.uuid4()),
+                    parts=[Part(root=TextPart(text=user_input))],
+                )
 
-        #query to the agent
-        query = "What are the benefits for woking for the NHS scotland? Provide the tools you used to find the answer."
+                print("\n🤖 Agent: ", end="", flush=True)
 
-        message_payload = Message(
-            role=Role.user,
-            messageId=str(uuid.uuid4()),
-            parts=[Part(root=TextPart(text=query))],
-        )
+                try:
+                    response = client.send_message(message_payload)
+                    
+                    seen_content = set()
+                    has_content = False
+                    
+                    async for task, event in response:
+                        status = event.status
+                        if status and status.message:
+                            for part in status.message.parts:
+                                if isinstance(part.root, TextPart):
+                                    content = part.root.text
+                                    
+                                    if content not in seen_content:
+                                        print(content, end="", flush=True)  # ✅ Just this
+                                        seen_content.add(content)
+                                        has_content = True
+                    
+                    if has_content:
+                        print("\n")  # Only ONE newline at the very end
+                    else:
+                        print("(No response)\n")
 
-        print(f"Sending message: {query}")
+                except Exception as e:
+                    print(f"\n❌ Error sending message: {e}\n")
+                    continue
 
-        try:
-            response = client.send_message(message_payload)
-            async for task, event in response:
-                #print(task)
-                status = event.status
-                if status and status.message:
-                    for part in status.message.parts:
-                        if isinstance(part.root, TextPart):
-                            print("Agent reply:", part.root.text)
+            except KeyboardInterrupt:
+                print("\n\n👋 Goodbye!")
+                break
+            except EOFError:
+                print("\n\n👋 Goodbye!")
+                break
+            except Exception as e:
+                print(f"\n❌ Unexpected error: {e}\n")
+                continue
 
-        except Exception as e:
-            print("❌ Error:", e)
-        finally:
-            print("Client closed.")
+        print("✅ Client closed.")
 
 
 if __name__ == "__main__":

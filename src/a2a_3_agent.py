@@ -1,3 +1,4 @@
+from asyncio.log import logger
 import os
 import logging
 from langchain_ollama import ChatOllama
@@ -60,33 +61,72 @@ class langG_agent:
         config: RunnableConfig = {"configurable": {"thread_id": context_id}}
         await self.graph.ainvoke({"messages": [("user", query)]}, config)
         return self.get_agent_response(config)
-    
+
+    """Token-by-token streaming method."""
     async def stream(self, query, context_id) -> AsyncIterable[dict[str, Any]]:
-        """Async stream method - FIXED to use astream instead of stream."""
+        """Token-by-token streaming using astream_events."""
         await self._initialize()
         inputs = {"messages": [("user", query)]}
         config: RunnableConfig = {"configurable": {"thread_id": context_id}}
 
-        async for item in self.graph.astream(inputs, config, stream_mode="values"):
-            message = item["messages"][-1]
-            if (
-                isinstance(message, AIMessage)
-                and message.tool_calls
-                and len(message.tool_calls) > 0
-            ):
-                yield {
-                    "is_task_complete": False,
-                    "require_user_input": False,
-                    "content": "Trying to use the tool...",
-                }
-            elif isinstance(message, ToolMessage):
-                yield {
-                    "is_task_complete": False,
-                    "require_user_input": False,
-                    "content": "Processing the response from tool...",
-                }
-
-        yield self.get_agent_response(config)
+        current_tool = None
+        
+        try:
+            async for event in self.graph.astream_events(inputs, config, version="v2"):
+                kind = event["event"]
+                
+                # Stream individual LLM tokens
+                if kind == "on_chat_model_stream":
+                    chunk = event["data"]["chunk"]
+                    if hasattr(chunk, "content") and chunk.content:
+                        yield {
+                            "is_task_complete": False,
+                            "require_user_input": False,
+                            "content": chunk.content,
+                        }
+                
+                # Tool started
+                elif kind == "on_tool_start":
+                    tool_name = event.get("name", "unknown")
+                    current_tool = tool_name
+                    logger.info(f"Tool started: {tool_name}")
+                    yield {
+                        "is_task_complete": False,
+                        "require_user_input": False,
+                        "content": f"\n\n🔧 Using tool: {tool_name}\n",
+                    }
+                
+                # Tool completed
+                elif kind == "on_tool_end":
+                    tool_name = event.get("name", current_tool or "unknown")
+                    logger.info(f"Tool completed: {tool_name}")
+                    yield {
+                        "is_task_complete": False,
+                        "require_user_input": False,
+                        "content": f"✅ Tool {tool_name} completed\n\n",
+                    }
+                    current_tool = None
+                
+                # Errors
+                elif kind == "on_chain_error":
+                    error_msg = str(event.get("data", {}).get("error", "Unknown error"))
+                    logger.error(f"Chain error: {error_msg}")
+                    yield {
+                        "is_task_complete": True,
+                        "require_user_input": False,
+                        "content": f"❌ Error: {error_msg}",
+                    }
+                    return
+            
+            yield self.get_agent_response(config)
+            
+        except Exception as e:
+            logger.error(f"Streaming error: {e}")
+            yield {
+                "is_task_complete": True,
+                "require_user_input": False,
+                "content": f"❌ Streaming error: {str(e)}",
+            }
     
     def get_agent_response(self, config):
         current_state = self.graph.get_state(config)

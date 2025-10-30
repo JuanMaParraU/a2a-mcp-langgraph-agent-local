@@ -1,5 +1,6 @@
 import asyncio
 from urllib import response
+from fastapi import logger
 from langchain_ollama import ChatOllama
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.prebuilt import create_react_agent
@@ -55,33 +56,91 @@ async def main():
                                 prompt=system_prompt, 
                                 checkpointer=memory)
     
-    print("\n🤖 Multi-turn MCP Agent ready! Type 'quit' or 'exit' to end the conversation.\n")
+    print("\n🤖 Multi-turn MCP Agent ready! Type 'quit' or 'exit' to end the conversation.")
+    print("Choose streaming mode:")
+    print("  1. State-based streaming (complete messages)")
+    print("  2. Token-by-token streaming (real-time)")
+    print()
+    
+    stream_mode = input("Select mode (1 or 2, default=2): ").strip() or "2"
+    use_token_streaming = stream_mode == "2"
+    
+    print(f"\n{'✨ Token-by-token' if use_token_streaming else '📦 State-based'} streaming enabled\n")
     
     while True:
         try:
-            user_input = input("You: ").strip()
+            user_input = input("🔎 You: ").strip()
             if user_input.lower() in ['quit', 'exit', 'q']:
-                print("Goodbye!")
+                print("👋 Goodbye!")
                 break
             
             if not user_input:
                 continue
-                
-            print("\nAgent: ", end="", flush=True)
             
-            # Stream the agent's response
-            async for event in agent.astream({"messages": user_input}, config=config, stream_mode="values"):
-                messages = event.get("messages", [])
-                if messages:
-                    last_msg = messages[-1]
-                    if hasattr(last_msg, "content") and last_msg.content and isinstance(last_msg, AIMessage):
-                        print(last_msg.content)
+            print("\n🤖 Agent: ", end="", flush=True)
+            
+            if use_token_streaming:
+                # TOKEN-BY-TOKEN STREAMING using astream_events
+                async for event in agent.astream_events(
+                    {"messages": user_input}, 
+                    config=config, 
+                    version="v2"
+                ):
+                    kind = event["event"]
+                    
+                    # Stream individual tokens
+                    if kind == "on_chat_model_stream":
+                        chunk = event["data"]["chunk"]
+                        if hasattr(chunk, "content") and chunk.content:
+                            print(chunk.content, end="", flush=True)
+                    
+                    # Tool started
+                    elif kind == "on_tool_start":
+                        tool_name = event.get("name", "unknown")
+                        print(f"\n\n🔧 Using tool: {tool_name}...", end="", flush=True)
+                    
+                    # Tool completed
+                    elif kind == "on_tool_end":
+                        tool_name = event.get("name", "unknown")
+                        print(f" ✅\n", end="", flush=True)
+                
+                print("\n")  # Newline after complete response
+                
+            else:
+                # STATE-BASED STREAMING (original approach)
+                last_content = ""
+                async for event in agent.astream(
+                    {"messages": user_input}, 
+                    config=config, 
+                    stream_mode="values"
+                ):
+                    messages = event.get("messages", [])
+                    if messages:
+                        last_msg = messages[-1]
+                        
+                        # Tool call indicator
+                        if isinstance(last_msg, AIMessage) and last_msg.tool_calls:
+                            tool_names = ", ".join([tc["name"] for tc in last_msg.tool_calls])
+                            print(f"\n🔧 Using tool: {tool_names}", flush=True)
+                        
+                        # Tool message indicator
+                        elif isinstance(last_msg, ToolMessage):
+                            print("📊 Processing results...", flush=True)
+                        
+                        # AI response
+                        elif isinstance(last_msg, AIMessage) and last_msg.content:
+                            if last_msg.content != last_content:
+                                print(f"\n{last_msg.content}", flush=True)
+                                last_content = last_msg.content
+                
+                print("\n")
                         
         except KeyboardInterrupt:
-            print("\n\nGoodbye!")
+            print("\n\n👋 Goodbye!")
             break
         except Exception as e:
-            print(f"\nError: {e}")
+            print(f"\n❌ Error: {e}\n")
+            logger.exception("Detailed error:")
             continue
 asyncio.run(main())
 
