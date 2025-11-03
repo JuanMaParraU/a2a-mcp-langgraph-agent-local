@@ -87,10 +87,30 @@ This launches three services in separate tmux windows:
 - **Window 1 (Agent):** Agent Server with A2A + LangGraph
 - **Window 2 (Client):** Interactive client for sending tasks
 
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ [ **Client** (User Input) ] --A2A--> [ **Agent** ] --MCP--> [ **MCP Server** ] --> [ Tools / APIs ]  │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+
 You should see something like this:
 
 
 ![Demo welcome screen](figures/start_agent.png)
+
+Now you can start chating with your remote MCP-enbled agent via A2A. To get started try the following prompts:
+```
+Agent Card # This will retrieve the Agent skills via A2A
+```
+```
+What tools are available to you?
+```
+```
+Use wikipedia to explain Transformer Models architecture
+```
+```
+Find the latest papers on Large Language Models
+```
 
 ---
 
