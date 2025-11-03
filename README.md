@@ -204,7 +204,7 @@ graph TB
     classDef a2aBox fill:#bbdefb,stroke:#1976d2,stroke-width:2px
     classDef mcpBox fill:#c8e6c9,stroke:#388e3c,stroke-width:2px
     classDef ollamaBox fill:#f8bbd0,stroke:#c2185b,stroke-width:2px
-    classDef subgraphStyle fill:#ffffff,stroke:#999,stroke-width:2px
+    classDef subgraphStyle fill:#f5f5f5,stroke:#999,stroke-width:2px
     
     class User,Client userStyle
     class Starlette,Executor,Agent a2aBox
