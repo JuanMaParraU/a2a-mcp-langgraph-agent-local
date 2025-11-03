@@ -139,43 +139,51 @@ tmux kill-session -t agentic-ai
 ## 🏗️ Architecture Overview
 
 ```mermaid
----
-config:
-  theme: mc
----
 graph TB
     User[👤 User]
     Client[client.py<br/>A2A Client]
-     subgraph A2A_Stack["🌐 A2A Agent Stack"]
+    
+    subgraph A2A_Stack["🌐 A2A Agent Stack"]
         Starlette[a2a_1_starlette.py<br/>HTTP Server Starlette<br/>• REST API endpoints<br/>• A2A protocol]
         Executor[a2a_2_executor.py<br/>Task Execution Engine<br/>• Task lifecycle<br/>• Error handling]
         Agent[a2a_3_agent.py<br/>LangGraph Agent Core<br/>• Agent reasoning<br/>• Ollama LLM backend<br/>• MCP client]
     end
-     subgraph MCP_Stack["🔌 MCP Tool Stack"]
+    
+    subgraph MCP_Stack["🔌 MCP Tool Stack"]
         MCP[mcp_server.py<br/>MCP Protocol Layer<br/>• Standardizes tool access<br/>• Formats responses<br/>• Tool discovery]
-         subgraph Tools["⚙️ Actual Tools"]
+        
+        subgraph Tools["⚙️ Actual Tools"]
             DDG[🔍 DuckDuckGo<br/>Search]
             ArXiv[📚 arXiv<br/>Search]
             Wiki[📖 Wikipedia<br/>Search]
         end
     end
+    
     subgraph Ollama["🧠 Ollama"]
         LLM[Local LLM Server]
         Models["Models:<br/>🔷 Mistral<br/>🦙 Llama 3<br/>⚡ Qwen<br/>💎 Gemma<br/>🤖 Gpt-oss"]
     end
-     Ollama[(Ollama<br/>Local LLM)]
-     LLM -->|serves|Models
-     User -->|Terminal Request| Client
-     Client -->|POST /send_message| Starlette
-     Starlette -->|wraps| Executor
-     Executor -->|wraps| Agent
-     Agent -->|connects to| MCP
-     Agent -.->|reasoning| Ollama
-     MCP -->|wraps| Tools
-     MCP -->|executes| DDG
-     MCP -->|executes| ArXiv
-     MCP -->|executes| Wiki
-
+    
+    LLM -->|serves| Models
+    
+    User -->|Terminal Request| Client
+    Client ==>|POST /send_message| Starlette
+    Starlette -->|wraps| Executor
+    Executor -->|wraps| Agent
+    Agent -->|connects to| MCP
+    Agent -.->|reasoning| LLM
+    MCP -->|wraps| Tools
+    MCP -->|executes| DDG
+    MCP -->|executes| ArXiv
+    MCP -->|executes| Wiki
+    
+    classDef a2a fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef mcp fill:#f1f8e9,stroke:#558b2f,stroke-width:2px
+    classDef ollama fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    
+    class Starlette,Executor,Agent a2a
+    class MCP,DDG,ArXiv,Wiki mcp
+    class LLM,Models ollama
 ```
 
 **Read more:** [Blog post with detailed architecture explanation](https://your-blog-link.com)
