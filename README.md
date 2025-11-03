@@ -87,10 +87,13 @@ This launches three services in separate tmux windows:
 - **Window 1 (Agent):** Agent Server with A2A + LangGraph
 - **Window 2 (Client):** Interactive client for sending tasks
 
-┌──────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ [ **Client** (User Input) ] --A2A--> [ **Agent** ] --MCP--> [ **MCP Server** ] --> [ Tools / APIs ]  │
-└──────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
+```py
+# Flow
+┌───────────────────────────────────────────────────────────────────────────────────────────┐
+│ [ Client (User Input) ] --A2A--> [ Agent ] --MCP--> [ MCP Server ] --> [ Tools / APIs ]   │
+└───────────────────────────────────────────────────────────────────────────────────────────┘
+```
 
 
 You should see something like this:
