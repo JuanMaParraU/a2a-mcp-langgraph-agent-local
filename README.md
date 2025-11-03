@@ -89,9 +89,8 @@ This launches three services in separate tmux windows:
 
 You should see something like this:
 
-```markdown
+
 ![Demo welcome screen](figures/start_agent.png)
-```
 
 ---
 
