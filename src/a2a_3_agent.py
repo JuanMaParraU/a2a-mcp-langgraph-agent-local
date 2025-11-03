@@ -2,10 +2,8 @@ from asyncio.log import logger
 import os
 import logging
 from langchain_ollama import ChatOllama
-from langchain_community.utilities.duckduckgo_search import DuckDuckGoSearchAPIWrapper
 from langgraph.prebuilt import create_react_agent
 from typing import Any, List, Literal
-from langchain_core.messages import AIMessage, ToolMessage
 from pydantic import BaseModel
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.runnables import RunnableConfig
