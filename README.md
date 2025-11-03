@@ -95,7 +95,8 @@ You should see something like this:
 ---
 
 ## 🎮 Managing the Tmux Session
-If you are not familiar with tmux sessions, please visist [.......] for a quick introduction. 
+If you're new to tmux, check out this quick [https://github.com/tmux/tmux/wiki/Getting-Started](introduction to tmux) to get started. It covers the basics of creating, attaching, and managing sessions.
+If you are not familiar with tmux sessions, please visist [.......] for a quick introduction . 
 
 ### Switching Between Windows
 
