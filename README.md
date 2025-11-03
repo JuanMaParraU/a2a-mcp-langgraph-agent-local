@@ -177,13 +177,15 @@ graph TB
     MCP -->|executes| ArXiv
     MCP -->|executes| Wiki
     
-    classDef a2a fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
-    classDef mcp fill:#f1f8e9,stroke:#558b2f,stroke-width:2px
-    classDef ollama fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef userStyle fill:#e8eaf6,stroke:#5c6bc0,stroke-width:2px
+    classDef a2aBox fill:#bbdefb,stroke:#1976d2,stroke-width:2px
+    classDef mcpBox fill:#c8e6c9,stroke:#388e3c,stroke-width:2px
+    classDef ollamaBox fill:#f8bbd0,stroke:#c2185b,stroke-width:2px
     
-    class Starlette,Executor,Agent a2a
-    class MCP,DDG,ArXiv,Wiki mcp
-    class LLM,Models ollama
+    class User,Client userStyle
+    class Starlette,Executor,Agent a2aBox
+    class MCP,DDG,ArXiv,Wiki mcpBox
+    class LLM,Models ollamaBox
 ```
 
 **Read more:** [Blog post with detailed architecture explanation](https://your-blog-link.com)
