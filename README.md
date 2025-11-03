@@ -139,6 +139,10 @@ tmux kill-session -t agentic-ai
 ## 🏗️ Architecture Overview
 
 ```mermaid
+---
+config:
+  theme: mc
+---
 graph TB
     User[👤 User]
     Client[client.py<br/>A2A Client]
@@ -155,8 +159,13 @@ graph TB
             Wiki[📖 Wikipedia<br/>Search]
         end
     end
-     Ollama[(🦙 Ollama<br/>Local LLM)]
-     User -->|HTTP Request| Client
+    subgraph Ollama["🧠 Ollama"]
+        LLM[Local LLM Server]
+        Models["Models:<br/>🔷 Mistral<br/>🦙 Llama 3<br/>⚡ Qwen<br/>💎 Gemma<br/>🤖 Gpt-oss"]
+    end
+     Ollama[(Ollama<br/>Local LLM)]
+     LLM -->|serves|Models
+     User -->|Terminal Request| Client
      Client -->|POST /send_message| Starlette
      Starlette -->|wraps| Executor
      Executor -->|wraps| Agent
@@ -166,6 +175,7 @@ graph TB
      MCP -->|executes| DDG
      MCP -->|executes| ArXiv
      MCP -->|executes| Wiki
+
 ```
 
 **Read more:** [Blog post with detailed architecture explanation](https://your-blog-link.com)
