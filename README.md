@@ -102,8 +102,9 @@ You should see something like this:
 ![Demo welcome screen](figures/start_agent.png)
 
 Now you can start chating with your remote MCP-enbled agent via A2A. To get started try the following prompts:
+###### (This will retrieve the Agent skills via A2A)
 ```
-Agent Card # This will retrieve the Agent skills via A2A
+agent card 
 ```
 ```
 What tools are available to you?
