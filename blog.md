@@ -3,11 +3,13 @@
 ## 🧠 TL;DR
 
 **Conceptually:**
+
 - **Agentic AI** = Reasoning LLMs autonomously executing multi-step processes
 - **A2A (Agent-to-Agent)** = Protocol enabling standardized communication with and between agents, and discovery of their capabilities
 - **MCP (Model Context Protocol)** = Standardized way for agents to access tools and APIs consistently
 
 **Implementation:**
+
 - Agentic SDKs use LLMs as reasoning engines
 - A2A SDK wraps agent code, exposing its capabilities via a standard protocol
 - MCP SDK wraps tools/APIs, exposing them via a standard protocol
@@ -22,14 +24,15 @@ In this tutorial, you'll interact with an Agent via A2A, which accesses tools th
 
 ### 2025: The Year of Agents
 
-We're at a key moment in AI development. While recent years focused on scaling models and refining APIs, the next frontier is **autonomy**—AI systems that can reason, plan, and execute complex tasks independently. 
+We're at a key moment in AI development. While recent years focused on scaling models and refining APIs, the next frontier is **autonomy**—AI systems that can reason, plan, and execute complex tasks independently.
 
 The convergence of three key technologies is making this possible:
+
 - **MCP** enables agents to reliably access tools and data sources
 - **A2A** provides the communication layer for multi-agent collaboration
 - **Agentic frameworks** orchestrate the reasoning and execution loops
 
-When I started exploring agentic systems for my research work at [BT Group](https://www.bt.com/about/bt/research-and-development), I found excellent materials scattered across various sources, but I hit a wall: there was no complete, end-to-end implementation using only open-source tools. Everything required subscriptions, API keys, or vendor lock-in. I wanted a pure, experimentation-ready practical solution that anyone could run locally and understand fully.
+When I started exploring agentic systems for my research work at **[BT Group](https://www.bt.com/about/bt/research-and-development)**, I found excellent materials scattered across various sources, but I hit a wall: there was no complete, end-to-end implementation using only open-source tools. Everything required subscriptions, API keys, or vendor lock-in. I wanted a pure, experimentation-ready practical solution that anyone could run locally and understand fully.
 
 So I built one.
 
@@ -61,7 +64,7 @@ This enables autonomous digital co-workers capable of reasoning and action — t
 
 An agentic system comprises four key elements:
 
-1. **Agentic Framework** - Orchestrates the reasoning loop (LangGraph, AutoGen, CrewAI)
+1. **Agentic Framework** - Orchestrates the reasoning loop (LangGraph, AutoGen, CrewAI, LlamaIndex)
 2. **LLMs** - Provide reasoning and decision-making capabilities
 3. **Tools** - Enable interaction with external systems and data
 4. **Environment** - Context and state management for task execution
@@ -85,6 +88,7 @@ Most agentic systems follow the **ReAct** (Reasoning and Acting) pattern, famili
 Developed by Anthropic, MCP defines a standard interface for models to connect with tools and data sources safely and consistently. Rather than framework-specific plugin systems, MCP provides a shared language for capability access, enabling true interoperability.
 
 **Key Benefits:**
+
 - 🔌 **Universal Tool Interface** - One protocol works across all frameworks
 - 🔐 **Security Built-in** - Standardized permission and authentication models
 - 📦 **Plug-and-Play** - Add new tools without modifying agent code
@@ -97,7 +101,7 @@ graph LR
     B --> D[Tool 2: Database]
     B --> E[Tool 3: API]
     B --> F[Tool N: Custom]
-    
+  
     style A fill:#e3f2fd
     style B fill:#fff3e0
     style C fill:#f3e5f5
@@ -117,6 +121,7 @@ When multiple agents coexist, they need structured communication. A2A provides t
 Beyond inter-agent coordination, A2A also establishes a **standardized interface** for communicating with agents regardless of their backend implementation. This means you can interact with a LangGraph agent, an AutoGen agent, or a custom-built agent using the same protocol, enabling true framework-agnostic agent ecosystems.
 
 **Key Capabilities:**
+
 - 📋 **Task Delegation** - Agents can assign work to specialized agents
 - 💬 **Message Exchange** - Structured communication protocols
 - 🔍 **Capability Discovery** - Agents can query what other agents can do
@@ -133,12 +138,12 @@ graph TB
     U <-.->|A2A Protocol|A1
     A3 <-.->|A2A Protocol|A1
     A2 <-.->|A2A Protocol|A1
-    
+  
     style U fill:#c8e6c9
     style A1 fill:#e3f2fd
     style A2 fill:#e3f2fd
     style A3 fill:#e3f2fd
-    
+  
     %% Color the A2A Protocol edges (indices 6, 7, 8)
     linkStyle 6 stroke:#ff6b6b,stroke-width:3px,color:#ff6b6b
     linkStyle 7 stroke:#ff6b6b,stroke-width:3px,color:#ff6b6b
@@ -170,6 +175,7 @@ The `a2a-mcp-langgraph-agent-local` repository demonstrates a local-first agenti
 ### 🧱 Building Blocks
 
 #### **1. Ollama - Local Model Serving**
+
 In this implementation, we use **Ollama** for local LLM serving due to its simplicity and broad model support. Other powerful alternatives include **vLLM** (high-performance serving with PagedAttention—we're exploring this in our next iteration), **SGLang** (optimized for structured generation), **Triton Inference Server** (production-grade NVIDIA solution), and **llama.cpp** (lightweight C++ implementation).
 
 ```python
@@ -182,6 +188,7 @@ model = ChatOllama(
 ```
 
 In this implementation, we utilize **Mistral-Nemo** as the Language Model (LLM), a solution that excels in:
+
 - Tool usage and function calling
 - Multi-turn conversations using the ReAct pattern
 - Instruction following and reasoning
@@ -193,6 +200,7 @@ ollama pull {model-name}
 ```
 
 **Popular alternatives to try:**
+
 - `llama3.1` - Strong general reasoning
 - `qwen2.5` - Excellent tool use
 - `deepseek-r1` - Advanced reasoning capabilities
@@ -204,6 +212,7 @@ ollama pull {model-name}
 #### **2. LangGraph Agent - Orchestration Framework**
 
 LangGraph is a framework developed by LangChain, one of the most popular open-source SDKs for building agents. It manages different stages of an agentic pipeline using **graphs**, where:
+
 - **Nodes** represent individual components (input processing, LLM calls, tool execution)
 - **Edges** define interactions and control flow between nodes
 
@@ -231,6 +240,7 @@ self.graph = create_react_agent(
 ```
 
 **Key Features:**
+
 - 🔄 **State Management** - Track conversation and task state
 - 💾 **Checkpointing** - Persist state for long-running tasks
 - 🛠️ **Tool Integration** - Seamless MCP tool binding
@@ -241,6 +251,7 @@ self.graph = create_react_agent(
 #### **3. MCP Stack - Tool Integration Layer**
 
 The MCP stack comprises three components:
+
 1. **Server** - Hosts and exposes tools via MCP protocol
 2. **Tools** - Actual functionality (search, database, APIs)
 3. **Client** - Consumes tools from MCP servers
@@ -260,10 +271,10 @@ mcp = FastMCP("ResearchTools")
 @mcp.tool()
 async def wikipedia_search(query: str) -> str:
     """Search Wikipedia for factual information.
-    
+  
     Args:
         query: The search term or topic to look up
-        
+      
     Returns:
         A summary of the Wikipedia article (3 sentences)
     """
@@ -302,13 +313,14 @@ async def _get_mcp_tools(self):
             }
         }
     )
-    
+  
     # Retrieve all available tools from the MCP server
     tools = await mcp_client.get_tools()
     return tools
 ```
 
 **Benefits of MCP Architecture:**
+
 - 🔧 **Separation of Concerns** - Tools independent of agent logic
 - 🔄 **Hot Swapping** - Update tools without restarting agents
 - 📊 **Centralized Management** - One server, multiple agents
@@ -319,10 +331,10 @@ async def _get_mcp_tools(self):
 #### **4. A2A Stack - Agent Communication Layer**
 
 The A2A stack wraps your agent to make it discoverable and communicable via the A2A protocol. It comprises three components:
+
 1. **HTTP Server** - Exposes agent via A2A protocol endpoints and handles agent discovery
 2. **Executor** - Manages task lifecycle, event streaming, and error handling
 3. **Agent Wrapper** - Adapts your agent implementation to A2A interface standards
-
 
 ##### Starlette HTTP Server
 
@@ -362,7 +374,7 @@ server = A2AStarletteApplication(
 ```python
 class LangGraphAgentExecutor:
     """Executes agent tasks with proper lifecycle management."""
-    
+  
     async def execute(
         self, 
         context: RequestContext, 
@@ -370,7 +382,7 @@ class LangGraphAgentExecutor:
     ) -> None:
         """
         Main execution method called by A2A framework.
-        
+      
         Args:
             context: Request context with user input and session info
             event_queue: Queue for sending events back to caller
@@ -378,15 +390,15 @@ class LangGraphAgentExecutor:
         # Extract user message
         user_message = context.message
         session_id = context.session_id
-        
+      
         # Execute agent with streaming
         async for event in self.agent.stream(user_message, session_id):
             await event_queue.put(event)
-        
+      
         # Send final response
         response = self.agent.get_agent_response(session_id)
         await event_queue.put(response)
-    
+  
     async def cancel(
         self, 
         context: RequestContext, 
@@ -401,7 +413,7 @@ class LangGraphAgentExecutor:
 ```python
 class LangGraphAgent:
     """Wraps LangGraph with A2A-compatible interface."""
-    
+  
     async def invoke(self, query: str, context_id: str):
         """Async invoke method for single-shot queries."""
         config = {"configurable": {"thread_id": context_id}}
@@ -410,7 +422,7 @@ class LangGraphAgent:
             config=config
         )
         return result
-    
+  
     async def stream(
         self, 
         query: str, 
@@ -418,7 +430,7 @@ class LangGraphAgent:
     ) -> AsyncIterable[dict[str, Any]]:
         """Token-by-token streaming using astream_events."""
         config = {"configurable": {"thread_id": context_id}}
-        
+      
         async for event in self.graph.astream_events(
             {"messages": [("user", query)]},
             config=config,
@@ -432,7 +444,7 @@ class LangGraphAgent:
                         "type": "content_delta",
                         "delta": chunk.content
                     }
-    
+  
     def get_agent_response(self, context_id: str):
         """Retrieve final structured response."""
         config = {"configurable": {"thread_id": context_id}}
@@ -456,6 +468,7 @@ mcp_server.py               # Tool access via MCP
 ```
 
 **Benefits:**
+
 - 🏗️ **Modularity** - Each layer has clear responsibilities
 - 🔄 **Reusability** - Swap components without breaking others
 - 🧪 **Testability** - Test each layer independently
@@ -473,39 +486,50 @@ graph TB
     Client[client.py<br/>A2A Client]
     
     subgraph A2A_Stack["🌐 A2A Agent Stack"]
-        Starlette[a2a_1_starlette.py<br/>HTTP Server Starlette<br/>• REST API endpoints<br/>• A2A protocol<br/>• Agent discovery]
-        Executor[a2a_2_executor.py<br/>Task Execution Engine<br/>• Task lifecycle<br/>• Event streaming<br/>• Error handling]
-        Agent[a2a_3_agent.py<br/>LangGraph Agent Core<br/>• ReAct reasoning loop<br/>• Ollama LLM backend<br/>• MCP client connection<br/>• State management]
+        Starlette[a2a_1_starlette.py<br/>HTTP Server Starlette<br/>• REST API endpoints<br/>• A2A protocol]
+        Executor[a2a_2_executor.py<br/>Task Execution Engine<br/>• Task lifecycle<br/>• Error handling]
+        Agent[a2a_3_agent.py<br/>LangGraph Agent Core<br/>• Agent reasoning<br/>• Ollama LLM backend<br/>• MCP client]
     end
     
     subgraph MCP_Stack["🔌 MCP Tool Stack"]
-        MCP[mcp_server.py<br/>MCP Protocol Layer<br/>• Standardizes tool access<br/>• Formats responses<br/>• Tool discovery API<br/>• Error handling]
+        MCP[mcp_server.py<br/>MCP Protocol Layer<br/>• Standardizes tool access<br/>• Formats responses<br/>• Tool discovery]
         
         subgraph Tools["⚙️ Actual Tools"]
-            DDG[🔍 DuckDuckGo<br/>Web Search]
-            ArXiv[📚 arXiv<br/>Academic Papers]
-            Wiki[📖 Wikipedia<br/>Encyclopedia]
+            DDG[🔍 DuckDuckGo<br/>Search]
+            ArXiv[📚 arXiv<br/>Search]
+            Wiki[📖 Wikipedia<br/>Search]
         end
     end
     
-    Ollama[(🦙 Ollama<br/>Local LLM<br/>Mistral-Nemo)]
+    subgraph Ollama["🧠 Ollama"]
+        LLM[Local LLM Server]
+        Models["Models:<br/>🔷 Mistral<br/>🦙 Llama 3<br/>⚡ Qwen<br/>💎 Gemma<br/>🤖 Gpt-oss"]
+    end
     
-    User -->|HTTP Request| Client
-    Client -->|POST /send_message| Starlette
+    LLM -->|serves| Models
+    
+    User -->|Terminal Request| Client
+    Client ==>|POST /send_message| Starlette
     Starlette -->|wraps| Executor
     Executor -->|wraps| Agent
-    Agent -->|MCP Protocol| MCP
-    Agent -.->|reasoning queries| Ollama
-    MCP -->|exposes| Tools
+    Agent -->|connects to| MCP
+    Agent -.->|reasoning| LLM
+    MCP -->|wraps| Tools
     MCP -->|executes| DDG
     MCP -->|executes| ArXiv
     MCP -->|executes| Wiki
     
-    style A2A_Stack fill:#e3f2fd
-    style MCP_Stack fill:#fff3e0
-    style Tools fill:#f3e5f5
-    style User fill:#c8e6c9
-    style Ollama fill:#ffe0b2
+    classDef userStyle fill:#e8eaf6,stroke:#5c6bc0,stroke-width:2px
+    classDef a2aBox fill:#bbdefb,stroke:#1976d2,stroke-width:2px
+    classDef mcpBox fill:#c8e6c9,stroke:#388e3c,stroke-width:2px
+    classDef ollamaBox fill:#f8bbd0,stroke:#c2185b,stroke-width:2px
+    classDef subgraphStyle fill:#f5f5f5,stroke:#999,stroke-width:2px
+    
+    class User,Client userStyle
+    class Starlette,Executor,Agent a2aBox
+    class MCP,DDG,ArXiv,Wiki mcpBox
+    class LLM,Models ollamaBox
+    class A2A_Stack,MCP_Stack,Tools,Ollama subgraphStyle
 ```
 
 ---
@@ -552,6 +576,7 @@ chmod +x start_agents.sh
 This is a foundation, not a finished product. Here are directions for future development:
 
 ### 🚀 Distributed Inference Support
+
 - **Ray and vLLM Integration** - Scale inference across multiple GPUs or machines using Ray's distributed computing framework combined with vLLM's high-performance serving. This enables:
   - **Horizontal Scaling** - Distribute model inference across a cluster for higher throughput
   - **PagedAttention** - vLLM's efficient memory management for handling long contexts and batch processing
@@ -559,32 +584,36 @@ This is a foundation, not a finished product. Here are directions for future dev
   - **Dynamic Batching** - Automatically batch requests for improved GPU utilization
   - **Multi-Model Serving** - Host multiple specialized models (e.g., reasoning, code generation, summarization) with intelligent routing
 
-
 ### 🔭 Observability & Debugging
+
 - **Graph Visualization** - Add visual debugging tools for agent state and transitions
 - **Tracing** - Implement distributed tracing for multi-agent workflows
 - **Metrics** - Add performance monitoring and bottleneck identification
 - **Logging** - Structured logging for all agent decisions and tool calls
 
 ### 🧩 Advanced A2A Patterns
+
 - **Negotiation Protocols** - Implement agent-to-agent negotiation for resource allocation
 - **Consensus Mechanisms** - Multi-agent voting and decision-making
 - **Error Recovery** - Automatic retry and fallback strategies
 - **Load Balancing** - Distribute tasks across multiple agent instances
 
 ### ⚙️ Extended MCP Tools
+
 - **Database Integration** - SQL, MongoDB, Redis connectors
 - **REST APIs** - Generic REST client with authentication
 - **Custom Data Sources** - File systems, cloud storage, webhooks
 - **Authentication** - OAuth, API key management, secure credential storage
 
 ### 🧠 Model Experimentation
+
 - **Benchmark Suite** - Compare different local models for specific agent tasks
 - **Model Router** - Automatically select best model for each task type
 - **Fine-tuning** - Custom model training for domain-specific agents
 - **Quantization** - Optimize models for resource-constrained environments
 
 ### 🤝 Plugin System
+
 - **Extension Framework** - Create an plugin architecture for community contributions
 - **Tool Marketplace** - Share and discover MCP tools
 - **Agent Templates** - Pre-built agent patterns for common use cases
@@ -638,16 +667,15 @@ At **BT Group**, we're actively exploring how autonomous agents can transform in
 
 ## 📄 License
 
-[Add your license here]
-
----
+This project is licensed under the MIT License.
 
 ## 🙏 Acknowledgments
 
 Built with ❤️ using:
+
 - [LangChain](https://github.com/langchain-ai/langchain) & [LangGraph](https://github.com/langchain-ai/langgraph)
-- [Anthropic's MCP](https://modelcontextprotocol.io/)
-- [Google's A2A](https://a2a.anthropic.com/)
+- [Anthropic&#39;s MCP](https://modelcontextprotocol.io/)
+- [Google&#39;s A2A](https://a2a.anthropic.com/)
 - [Ollama](https://ollama.ai/)
 
 ---
