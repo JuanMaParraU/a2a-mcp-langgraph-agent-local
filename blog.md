@@ -14,7 +14,7 @@
 
 In this tutorial, you'll interact with an Agent via A2A, which accesses tools through MCP — all running locally with open-source software.
 
-**🔗 [GitHub Repository](https://github.com/yourusername/a2a-mcp-langgraph-agent-local)**
+**🔗 [GitHub Repository](https://github.com/JuanMaParraU/a2a-mcp-langgraph-agent-local/tree/main)**
 
 ---
 
@@ -22,14 +22,14 @@ In this tutorial, you'll interact with an Agent via A2A, which accesses tools th
 
 ### 2025: The Year of Agents
 
-We're at a pivotal moment in AI development. While recent years focused on scaling models and refining APIs, the next frontier is **autonomy**—AI systems that can reason, plan, and execute complex tasks independently. 
+We're at a key moment in AI development. While recent years focused on scaling models and refining APIs, the next frontier is **autonomy**—AI systems that can reason, plan, and execute complex tasks independently. 
 
 The convergence of three key technologies is making this possible:
 - **MCP** enables agents to reliably access tools and data sources
 - **A2A** provides the communication layer for multi-agent collaboration
 - **Agentic frameworks** orchestrate the reasoning and execution loops
 
-When I started exploring agentic systems, I found excellent materials scattered across various sources, but I hit a wall: there was no complete, end-to-end implementation using only open-source tools. Everything required subscriptions, API keys, or vendor lock-in. I wanted a pure, experimentation-ready practical solution that anyone could run locally and understand fully.
+When I started exploring agentic systems for my research work at [BT Group](https://www.bt.com/about/bt/research-and-development), I found excellent materials scattered across various sources, but I hit a wall: there was no complete, end-to-end implementation using only open-source tools. Everything required subscriptions, API keys, or vendor lock-in. I wanted a pure, experimentation-ready practical solution that anyone could run locally and understand fully.
 
 So I built one.
 
@@ -112,7 +112,9 @@ graph LR
 
 ### 🔁 Agent-to-Agent (A2A) Communication
 
-When multiple agents coexist, they need structured communication. A2A provides this framework — defining how agents exchange messages, delegate tasks, and collaborate on shared objectives.
+When multiple agents coexist, they need structured communication. A2A provides this framework — defining how agents exchange messages, delegate tasks, and collaborate on shared objectives. Originally developed by Google, A2A has now been donated to the Linux Foundation.
+
+Beyond inter-agent coordination, A2A also establishes a **standardized interface** for communicating with agents regardless of their backend implementation. This means you can interact with a LangGraph agent, an AutoGen agent, or a custom-built agent using the same protocol, enabling true framework-agnostic agent ecosystems.
 
 **Key Capabilities:**
 - 📋 **Task Delegation** - Agents can assign work to specialized agents
@@ -128,19 +130,23 @@ graph TB
     A2 -->|Results| A1
     A3 -->|Results| A1
     A1 -->|Final Response| U
-    
-    A2 -.->|A2A Protocol| Tools1[Search Tools]
-    A3 -.->|A2A Protocol| Tools2[Data Tools]
+    U <-.->|A2A Protocol|A1
+    A3 <-.->|A2A Protocol|A1
+    A2 <-.->|A2A Protocol|A1
     
     style U fill:#c8e6c9
     style A1 fill:#e3f2fd
     style A2 fill:#e3f2fd
     style A3 fill:#e3f2fd
-    style Tools1 fill:#fff3e0
-    style Tools2 fill:#fff3e0
+    
+    %% Color the A2A Protocol edges (indices 6, 7, 8)
+    linkStyle 6 stroke:#ff6b6b,stroke-width:3px,color:#ff6b6b
+    linkStyle 7 stroke:#ff6b6b,stroke-width:3px,color:#ff6b6b
+    linkStyle 8 stroke:#ff6b6b,stroke-width:3px,color:#ff6b6b
+
 ```
 
-📚 **Learn more:** [A2A Protocol Specification](https://a2a.anthropic.com/)
+📚 **Learn more:** [A2A Protocol Specification](https://a2a-protocol.org/latest/)
 
 Together, **MCP and A2A** create the foundation for cooperative, extensible agent ecosystems that grow organically rather than through rigid scripting.
 
@@ -164,6 +170,7 @@ The `a2a-mcp-langgraph-agent-local` repository demonstrates a local-first agenti
 ### 🧱 Building Blocks
 
 #### **1. Ollama - Local Model Serving**
+In this implementation, we use **Ollama** for local LLM serving due to its simplicity and broad model support. Other powerful alternatives include **vLLM** (high-performance serving with PagedAttention—we're exploring this in our next iteration), **SGLang** (optimized for structured generation), **Triton Inference Server** (production-grade NVIDIA solution), and **llama.cpp** (lightweight C++ implementation).
 
 ```python
 from langchain_ollama import ChatOllama
@@ -267,22 +274,14 @@ async def wikipedia_search(query: str) -> str:
             partial(wikipedia.summary, query, sentences=3)
         )
         return result
-    except wikipedia.exceptions.DisambiguationError as e:
-        return f"Multiple results found. Please be more specific: {e.options[:5]}"
-    except wikipedia.exceptions.PageError:
-        return f"No Wikipedia page found for: {query}"
+        ...
 
 @mcp.tool()
 async def arxiv_search(query: str) -> str:
     """Search arXiv for academic papers."""
     # Implementation here
     pass
-
-@mcp.tool()
-async def duckduckgo_search(query: str) -> str:
-    """Perform web search using DuckDuckGo."""
-    # Implementation here
-    pass
+    ...x
 
 # Run MCP server on HTTP transport
 mcp.run(transport="streamable-http")
@@ -319,7 +318,11 @@ async def _get_mcp_tools(self):
 
 #### **4. A2A Stack - Agent Communication Layer**
 
-The A2A stack wraps your agent to make it discoverable and communicable via the A2A protocol.
+The A2A stack wraps your agent to make it discoverable and communicable via the A2A protocol. It comprises three components:
+1. **HTTP Server** - Exposes agent via A2A protocol endpoints and handles agent discovery
+2. **Executor** - Manages task lifecycle, event streaming, and error handling
+3. **Agent Wrapper** - Adapts your agent implementation to A2A interface standards
+
 
 ##### Starlette HTTP Server
 
@@ -507,12 +510,13 @@ graph TB
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Quick Getting Started
 
 ### Prerequisites
 
 - Python 3.10+
 - Ollama installed and running
+- Tmux installed
 - 8GB+ RAM (16GB+ recommended)
 - GPU recommended but not required
 
@@ -520,7 +524,7 @@ graph TB
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/a2a-mcp-langgraph-agent-local.git
+git clone https://github.com/JuanMaParraU/a2a-mcp-langgraph-agent-local/tree/main
 cd a2a-mcp-langgraph-agent-local
 
 # Create virtual environment
@@ -537,14 +541,8 @@ ollama pull mistral-nemo
 ### Running the System
 
 ```bash
-# Terminal 1: Start MCP Server
-python mcp_server.py
-
-# Terminal 2: Start A2A Agent
-python a2a_1_starlette.py
-
-# Terminal 3: Run client
-python client.py
+chmod +x start_agents.sh
+./start_agents.sh
 ```
 
 ---
@@ -552,6 +550,15 @@ python client.py
 ## 🧪 Possible Enhancements
 
 This is a foundation, not a finished product. Here are directions for future development:
+
+### 🚀 Distributed Inference Support
+- **Ray and vLLM Integration** - Scale inference across multiple GPUs or machines using Ray's distributed computing framework combined with vLLM's high-performance serving. This enables:
+  - **Horizontal Scaling** - Distribute model inference across a cluster for higher throughput
+  - **PagedAttention** - vLLM's efficient memory management for handling long contexts and batch processing
+  - **Model Parallelism** - Split large models across multiple GPUs for serving models that don't fit on a single device
+  - **Dynamic Batching** - Automatically batch requests for improved GPU utilization
+  - **Multi-Model Serving** - Host multiple specialized models (e.g., reasoning, code generation, summarization) with intelligent routing
+
 
 ### 🔭 Observability & Debugging
 - **Graph Visualization** - Add visual debugging tools for agent state and transitions
@@ -604,7 +611,7 @@ More importantly, this is an **invitation to collaborate**. Agentic AI is evolvi
 
 ### Get Involved
 
-- 🔗 **Clone the repo** and experiment: [a2a-mcp-langgraph-agent-local](https://github.com/yourusername/a2a-mcp-langgraph-agent-local)
+- 🔗 **Clone the repo** and experiment: [a2a-mcp-langgraph-agent-local](https://github.com/JuanMaParraU/a2a-mcp-langgraph-agent-local/tree/main)
 - 💡 **Open an issue** with ideas or questions
 - 🤝 **Submit a PR** if you build something interesting
 - 📧 **Reach out directly** — I'd love to hear what you're working on
@@ -623,7 +630,7 @@ At **BT Group**, we're actively exploring how autonomous agents can transform in
 
 - [LangGraph Documentation](https://langchain-ai.github.io/langgraph/)
 - [Model Context Protocol (MCP)](https://modelcontextprotocol.io/)
-- [Agent-to-Agent Protocol (A2A)](https://a2a.anthropic.com/)
+- [Agent-to-Agent Protocol (A2A)](https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/)
 - [Ollama Models](https://ollama.ai/library)
 - [Anthropic Documentation](https://docs.anthropic.com/)
 
@@ -640,7 +647,7 @@ At **BT Group**, we're actively exploring how autonomous agents can transform in
 Built with ❤️ using:
 - [LangChain](https://github.com/langchain-ai/langchain) & [LangGraph](https://github.com/langchain-ai/langgraph)
 - [Anthropic's MCP](https://modelcontextprotocol.io/)
-- [Anthropic's A2A](https://a2a.anthropic.com/)
+- [Google's A2A](https://a2a.anthropic.com/)
 - [Ollama](https://ollama.ai/)
 
 ---
