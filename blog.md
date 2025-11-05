@@ -24,13 +24,14 @@ In this tutorial, you'll interact with an Agent via A2A, which accesses tools th
 
 ### 2025: The Year of Agents
 
-We're at a key moment in AI development. While recent years focused on scaling models and refining APIs, the next frontier is **autonomy**—AI systems that can reason, plan, and execute complex tasks independently.
+We’re moving from AI as a chatbot you prompt to **AI as a colleague** you collaborate with — systems that understand objectives, plan multi-step workflows, leverage tools, and adapt when things don’t go as expected. The next frontier is autonomous **AI Agents** — capable of reasoning, acting, and working together independently.
+
 
 The convergence of three key technologies is making this possible:
 
+- **Agentic frameworks** orchestrate decision-making and execution loops powered by reasoning LLMs
 - **MCP** enables agents to reliably access tools and data sources
-- **A2A** provides the communication layer for multi-agent collaboration
-- **Agentic frameworks** orchestrate the reasoning and execution loops
+- **A2A** enables structured communication with and between agents for seamless collaboration
 
 When I started exploring agentic systems for my research work at **[BT Group](https://www.bt.com/about/bt/research-and-development)**, I found excellent materials scattered across various sources, but I hit a wall: there was no complete, end-to-end implementation using only open-source tools. Everything required subscriptions, API keys, or vendor lock-in. I wanted a pure, experimentation-ready practical solution that anyone could run locally and understand fully.
 
@@ -68,6 +69,10 @@ An agentic system comprises four key elements:
 2. **LLMs** - Provide reasoning and decision-making capabilities
 3. **Tools** - Enable interaction with external systems and data
 4. **Environment** - Context and state management for task execution
+
+<p align="center">
+  <img src="figures/agentic_ai.png" alt="Agentic AI components" width="50%">
+</p>
 
 #### The ReAct Loop
 
@@ -176,7 +181,7 @@ The `a2a-mcp-langgraph-agent-local` repository demonstrates a local-first agenti
 
 #### **1. Ollama - Local Model Serving**
 
-In this implementation, we use **Ollama** for local LLM serving due to its simplicity and broad model support. Other powerful alternatives include **vLLM** (high-performance serving with PagedAttention—we're exploring this in our next iteration), **SGLang** (optimized for structured generation), **Triton Inference Server** (production-grade NVIDIA solution), and **llama.cpp** (lightweight C++ implementation).
+In this implementation, we use **Ollama** for local LLM serving due to its simplicity and broad model support. Other powerful alternatives include **[vLLM](https://docs.vllm.ai/en/latest/)** (high-performance serving with PagedAttention—we're exploring this in our next iteration), **SGLang** (optimized for structured generation), **Triton Inference Server** (production-grade NVIDIA solution), and **llama.cpp** (lightweight C++ implementation).
 
 ```python
 from langchain_ollama import ChatOllama
@@ -220,22 +225,17 @@ You can develop custom graphs to manage each stage of agentic behavior or use La
 
 ```python
 SYSTEM_INSTRUCTION = """
-You are a smart research assistant agent. Use the search engine to look up information.
-You have access to the following tools:
-- wikipedia_search: For factual encyclopedia information
-- arxiv_search: For academic papers and research
-- duckduckgo_search: For general web search
-
-Always cite your sources and provide comprehensive answers.
+You are a smart research assistant with access to:
+- wikipedia_search: Encyclopedia information
+- arxiv_search: Academic papers
+- duckduckgo_search: General web search
 """
 
 self.graph = create_react_agent(
     self.model,
-    tools=self.tools,              # Tools available via MCP
-    checkpointer=memory,            # Memory for multi-turn conversations
-    debug=True,
-    prompt=self.SYSTEM_INSTRUCTION, # Initial prompt defining agent scope
-    response_format=ResponseFormat, # Template for managing interactions
+    tools=self.tools,
+    checkpointer=memory,
+    prompt=self.SYSTEM_INSTRUCTION
 )
 ```
 
@@ -260,42 +260,22 @@ The MCP stack comprises three components:
 
 ```python
 from mcp.server.fastmcp import FastMCP
-from functools import partial
-import asyncio
-import wikipedia
 
-# Initialize FastMCP server with a service name
 mcp = FastMCP("ResearchTools")
 
-# Wikipedia search tool - running async with a loop executor
 @mcp.tool()
 async def wikipedia_search(query: str) -> str:
-    """Search Wikipedia for factual information.
-  
-    Args:
-        query: The search term or topic to look up
-      
-    Returns:
-        A summary of the Wikipedia article (3 sentences)
-    """
-    try:
-        loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(
-            None, 
-            partial(wikipedia.summary, query, sentences=3)
-        )
-        return result
-        ...
+    """Search Wikipedia for factual information."""
+    # Implementation here
+    pass
 
 @mcp.tool()
 async def arxiv_search(query: str) -> str:
     """Search arXiv for academic papers."""
     # Implementation here
     pass
-    ...x
 
-# Run MCP server on HTTP transport
-mcp.run(transport="streamable-http")
+mcp.run(transport="streamable-http") #runs on port 8000 by default
 ```
 
 ##### MCP Client
@@ -374,24 +354,12 @@ server = A2AStarletteApplication(
 ```python
 class LangGraphAgentExecutor:
     """Executes agent tasks with proper lifecycle management."""
-  
-    async def execute(
-        self, 
-        context: RequestContext, 
-        event_queue: EventQueue
-    ) -> None:
-        """
-        Main execution method called by A2A framework.
-      
-        Args:
-            context: Request context with user input and session info
-            event_queue: Queue for sending events back to caller
-        """
-        # Extract user message
+    async def execute(self, context: RequestContext, event_queue: EventQueue):
+        """Execute agent task and stream responses."""
         user_message = context.message
         session_id = context.session_id
       
-        # Execute agent with streaming
+        # Stream agent responses
         async for event in self.agent.stream(user_message, session_id):
             await event_queue.put(event)
       
@@ -415,36 +383,23 @@ class LangGraphAgent:
     """Wraps LangGraph with A2A-compatible interface."""
   
     async def invoke(self, query: str, context_id: str):
-        """Async invoke method for single-shot queries."""
+        """Execute agent query."""
         config = {"configurable": {"thread_id": context_id}}
-        result = await self.graph.ainvoke(
-            {"messages": [("user", query)]},
+        return await self.graph.ainvoke(
+            {"messages": [("user", query)]}, 
             config=config
         )
-        return result
   
-    async def stream(
-        self, 
-        query: str, 
-        context_id: str
-    ) -> AsyncIterable[dict[str, Any]]:
-        """Token-by-token streaming using astream_events."""
+    async def stream(self, query: str, context_id: str):
+        """Stream agent responses token-by-token."""
         config = {"configurable": {"thread_id": context_id}}
-      
         async for event in self.graph.astream_events(
-            {"messages": [("user", query)]},
-            config=config,
-            version="v2"
+            {"messages": [("user", query)]}, 
+            config=config
         ):
-            # Filter and format events for A2A protocol
             if event["event"] == "on_chat_model_stream":
-                chunk = event["data"]["chunk"]
-                if hasattr(chunk, "content"):
-                    yield {
-                        "type": "content_delta",
-                        "delta": chunk.content
-                    }
-  
+                yield event["data"]["chunk"].content
+
     def get_agent_response(self, context_id: str):
         """Retrieve final structured response."""
         config = {"configurable": {"thread_id": context_id}}
@@ -675,7 +630,7 @@ Built with ❤️ using:
 
 - [LangChain](https://github.com/langchain-ai/langchain) & [LangGraph](https://github.com/langchain-ai/langgraph)
 - [Anthropic&#39;s MCP](https://modelcontextprotocol.io/)
-- [Google&#39;s A2A](https://a2a.anthropic.com/)
+- [Google&#39;s A2A](https://github.com/a2aproject/A2A)
 - [Ollama](https://ollama.ai/)
 
 ---
