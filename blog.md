@@ -8,7 +8,7 @@
 - **A2A (Agent-to-Agent)** = Protocol enabling standardized communication with and between agents, and discovery of their capabilities
 - **MCP (Model Context Protocol)** = Standardized way for agents to access tools and APIs consistently
 
-**Implementation:**
+**Practically:**
 
 - Agentic SDKs use LLMs as reasoning engines
 - A2A SDK wraps agent code, exposing its capabilities via a standard protocol
@@ -528,7 +528,7 @@ chmod +x start_agents.sh
 
 ## 🧪 Possible Enhancements
 
-This is a foundation, not a finished product. Here are directions for future development:
+This is a foundation, not a finished product. Of course the next step would be to take this and build your own agentc workflows for your use cases. In terms of the platform itself here are directions for future development:
 
 ### 🚀 Distributed Inference Support
 

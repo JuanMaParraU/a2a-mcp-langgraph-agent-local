@@ -179,10 +179,12 @@ a2a_1_starlette.py (HTTP server)
 
 **Example usage:**
 ```python
-from src.client import AgentClient
-
-client = AgentClient()
-result = client.send_task("research", {"topic": "agentic AI"})
+from a2a.client.client_factory import ClientFactory
+from a2a.client.client import ClientConfig
+    # Initialize the A2A client
+    config = ClientConfig(httpx_client=httpx_client)
+    factory = ClientFactory(config)
+    client = factory.create(final_agent_card_to_use)
 ```
 
 ---
@@ -249,7 +251,7 @@ python src/mcp_server.py
 # Keep this running - agents will connect to it for tool access
 ```
 
-### Terminal 1 (Optional): Test MCP Server First
+### (Optional) Terminal 2: Test MCP Server First
 ```bash
 python src/mcp_test_client.py
 # Validates tools are working before starting agents
