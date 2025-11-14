@@ -43,6 +43,7 @@ class langG_agent:
         """Initialize async components."""
         if not self._initialized:
             self.tools = await self._get_mcp_tools()
+####### LangGraph Main REACT Agentic Loop #############
             self.graph = create_react_agent(
                 self.model,
                 tools=self.tools,
@@ -51,6 +52,7 @@ class langG_agent:
                 prompt=self.SYSTEM_INSTRUCTION,
                 response_format=ResponseFormat,
             )
+########################################################            
             self._initialized = True    
 
     async def invoke(self, query, context_id):
