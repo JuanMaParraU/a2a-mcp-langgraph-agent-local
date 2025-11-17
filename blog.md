@@ -181,7 +181,7 @@ The `a2a-mcp-langgraph-agent-local` repository demonstrates a local-first agenti
 
 #### **1. Ollama - Local Model Serving**
 
-In this implementation, we use **Ollama** for local LLM serving due to its simplicity and broad model support. Other powerful alternatives include **[vLLM](https://docs.vllm.ai/en/latest/)** (high-performance serving with PagedAttention—we're exploring this in our next iteration), **SGLang** (optimized for structured generation), **Triton Inference Server** (production-grade NVIDIA solution), and **llama.cpp** (lightweight C++ implementation).
+In this implementation, we use **Ollama** for local LLM serving due to its simplicity and broad model support. Other powerful alternatives include **[vLLM](https://docs.vllm.ai/en/latest/)** (high-performance serving with PagedAttention—*we're exploring this framework in our next iteration*), **SGLang** (optimized for structured generation), **Triton Inference Server** (production-grade NVIDIA solution), and **llama.cpp** (lightweight C++ implementation).
 
 ```python
 from langchain_ollama import ChatOllama
@@ -381,7 +381,7 @@ class LangGraphAgentExecutor:
 ```python
 class LangGraphAgent:
     """Wraps LangGraph with A2A-compatible interface."""
-  
+    ...
     async def invoke(self, query: str, context_id: str):
         """Execute agent query."""
         config = {"configurable": {"thread_id": context_id}}

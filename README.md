@@ -13,7 +13,7 @@ This project demonstrates a complete agentic AI stack running entirely on your m
 
 **Use cases:** Build research assistants, automated workflows, multi-agent systems, or experiment with agentic patterns — all without external API costs and full control.
 
-**📖 Want to understand the architecture and concepts?** Read the [full blog post (TBC)](https://your-blog-link.com)
+**📖 Want to understand the architecture and concepts?** Read the [full blog post](blog.md)
 
 ---
 
@@ -71,7 +71,7 @@ graph TB
     class A2A_Stack,MCP_Stack,Tools,Ollama subgraphStyle
 ```
 
-**Read more:** [Blog post with detailed architecture explanation](https://your-blog-link.com)
+**Read more:** [Blog post with detailed architecture explanation](blog.md))
 
 
 ---
