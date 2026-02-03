@@ -11,6 +11,8 @@ import os
 from ddgs import DDGS  
 import arxiv
 
+
+os.environ["NO_PROXY"] = "127.0.0.1,localhost"
 os.environ["PORT"] = "8000"
 
 logging.basicConfig(level=logging.INFO)

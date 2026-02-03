@@ -6,8 +6,8 @@ from a2a.server.tasks import TaskUpdater
 from a2a.types import Part, TaskState, TextPart
 from a2a.utils.errors import ServerError
 from a2a.types import InternalError, UnsupportedOperationError
+from agent_orch import Orchestrator
 
-from orchestrator_agent import Orchestrator
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",

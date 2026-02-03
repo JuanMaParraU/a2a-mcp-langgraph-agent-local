@@ -1,17 +1,18 @@
 import uuid
 import asyncio
 import httpx
-
+import os
 from a2a.client.client_factory import ClientFactory
 from a2a.client.client import ClientConfig
 from a2a.client import A2ACardResolver
 from a2a.types import AgentCard, Message, Part, Role, TextPart
 
-BASE_URL = "http://localhost:8001"
+os.environ["NO_PROXY"] = "127.0.0.1,localhost"
+BASE_URL = "http://localhost:9990"
 
 # HTTP client timeout configuration
 timeout_config = httpx.Timeout(
-    connect=10.0,
+    connect=30.0,
     read=120.0,
     write=10.0,
     pool=5.0,

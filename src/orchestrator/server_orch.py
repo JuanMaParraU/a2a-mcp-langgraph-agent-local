@@ -32,7 +32,7 @@ def main():
     agent_card = AgentCard(
         name="Orchestrator Agent",
         description="Coordinates multiple agents via A2A",
-        url="http://localhost:8001",
+        url="http://localhost:9990/",
         defaultInputModes=["text"],
         defaultOutputModes=["text"],
         skills=skills,
@@ -50,7 +50,7 @@ def main():
         agent_card=agent_card,
     )
 
-    uvicorn.run(server.build(), host="0.0.0.0", port=8001)
+    uvicorn.run(server.build(), host="0.0.0.0", port=9990)
 
 if __name__ == "__main__":
     main()

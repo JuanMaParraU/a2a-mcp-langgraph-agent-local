@@ -34,7 +34,7 @@ class langG_agent:
     )
 
     def __init__(self):
-        self.model = ChatOllama(model="mistral-nemo", temperature=0)
+        self.model = ChatOllama(base_url="http://10.215.130.20:11434", model="mistral-nemo", temperature=0)
         self.tools = None
         self.graph = None
         self._initialized = False

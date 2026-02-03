@@ -52,7 +52,7 @@ def main():
     agent_card = AgentCard(
         name="LangGraph Agent",
         description="A simple LangGraph agent that does web searchs",
-        url="http://localhost:9998/",
+        url="http://localhost:9991/",
         defaultInputModes=["text"],
         defaultOutputModes=["text"],
         skills=skills,
@@ -71,8 +71,7 @@ def main():
         agent_card=agent_card,
     )
 
-    uvicorn.run(server.build(), host="0.0.0.0", port=9998)
-
+    uvicorn.run(server.build(), host="0.0.0.0", port=9991)
 
 if __name__ == "__main__":
     main()
