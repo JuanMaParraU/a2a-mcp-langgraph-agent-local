@@ -1,0 +1,22 @@
+{
+  "model": "gemma3:1b",
+  "requests_total": 3,
+  "errors_total": 0,
+  "inter_agent_messages": 0,
+  "tool_calls": 0,
+  "retrievals": 0,
+  "tokens_total": 587,
+  "submission_latencies": [
+    0.001280069351196289,
+    0.0022101402282714844,
+    0.00035500526428222656
+  ],
+  "throughputs": [
+    200.83338625957535
+  ],
+  "task_durations": [
+    2.931823253631592
+  ],
+  "avg_a2a_submission_latency": 0.00128173828125,
+  "avg_task_duration": 2.931823253631592
+}

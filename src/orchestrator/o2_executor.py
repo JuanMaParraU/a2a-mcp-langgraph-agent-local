@@ -6,7 +6,9 @@ from a2a.server.tasks import TaskUpdater
 from a2a.types import Part, TaskState, TextPart
 from a2a.utils.errors import ServerError
 from a2a.types import InternalError, UnsupportedOperationError
-from agent_orch import Orchestrator
+from o3_agent import Orchestrator
+from metrics import MetricsCollector
+import time
 
 logging.basicConfig(
     level=logging.INFO,
@@ -58,6 +60,8 @@ class OrchestratorExecutor(AgentExecutor):
         try:
             # --- Agent invocation ---
             logger.info("Invoking orchestrator agent")
+            metrics = MetricsCollector.get_instance()
+            task_start = time.time()
             result = await self.agent.invoke(query, context.context_id)
             logger.info("Agent invocation completed")
 
@@ -72,6 +76,9 @@ class OrchestratorExecutor(AgentExecutor):
             # --- Task completion ---
             await updater.complete()
             logger.info("Task %s COMPLETED", context.task_id)
+            task_duration = time.time() - task_start
+            metrics.record_task_duration(task_duration)
+            logger.info("Agent invocation completed in %.3fs", task_duration)
 
         except Exception as e:
             logger.exception("Execution error during task %s", context.task_id)

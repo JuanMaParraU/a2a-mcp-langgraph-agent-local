@@ -13,6 +13,8 @@ from a2a.client.client_factory import ClientFactory
 from a2a.client.client import ClientConfig
 from a2a.client import A2ACardResolver
 from a2a.types import AgentCard, Message, Part, Role, TextPart
+from metrics import MetricsCollector
+import time
 
 os.environ["NO_PROXY"] = "127.0.0.1,localhost"
 logger = logging.getLogger(__name__)
@@ -53,7 +55,10 @@ class OrchestratorAgent:
     """
 
     def __init__(self):
-        self.model = ChatOllama(base_url="http://10.215.130.20:11434", model="mistral-nemo", temperature=0)
+        self.llm = "gemma3:1b"
+        self.model = ChatOllama(model=self.llm, temperature=0)
+        metrics = MetricsCollector.get_instance()
+        metrics.data["model"] = self.llm
 
     async def plan(self, state: OrchestratorState) -> OrchestratorState:
         needs_delegation = any(
@@ -69,7 +74,12 @@ class OrchestratorAgent:
             final = f"Synthesized answer:\n{state['delegated_result']}"
         else:
             messages = [HumanMessage(content=state["user_input"])]
+            metrics = MetricsCollector.get_instance()
+            start = time.time()
             response = await self.model.ainvoke(messages)
+            duration = time.time() - start
+            metrics.data["throughputs"].append(len(str(response)) / duration)  # tokens/sec approx
+            metrics.data["tokens_total"] += getattr(response, "tokens_used", len(str(response))) 
             # ChatOllama returns a ChatResult-like object
             final = getattr(response, "content", str(response))
         return {**state, "final_response": final}
@@ -143,6 +153,9 @@ class OrchestratorGraph:
         self.agent = agent
         self.httpx_client = httpx.AsyncClient(timeout=timeout_config)
     async def delegate(self, state: OrchestratorState) -> OrchestratorState:
+        metrics = MetricsCollector.get_instance()
+        metrics.data["inter_agent_messages"] += 1   # already done
+        metrics.data["retrievals"] += 1   
         # Stub: replace with real A2A client call later
         delegated_result = "Result from delegated agent (stub)."
             # Initialize agent card resolver
