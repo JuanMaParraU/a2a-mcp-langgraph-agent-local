@@ -1,0 +1,34 @@
+{
+  "model": "gemma3:1b",
+  "requests_total": 4,
+  "errors_total": 0,
+  "inter_agent_messages": 3,
+  "tool_calls": 0,
+  "retrievals": 0,
+  "tokens_total": 1503,
+  "submission_latencies": [
+    0.0004420280456542969,
+    0.0026009082794189453,
+    0.0016226768493652344,
+    0.010801315307617188
+  ],
+  "throughputs": [],
+  "task_durations": [
+    3.208467960357666,
+    3.2167301177978516,
+    5.224622011184692,
+    5.230292320251465,
+    48.73634099960327,
+    48.7473509311676
+  ],
+  "tokens_completion": 1459,
+  "latencies": [],
+  "tokens_prompt": 44,
+  "ai_messages_count": 3,
+  "reasoning_steps": 3,
+  "tools_used": [],
+  "avg_latency": 0.003866732120513916,
+  "avg_task_duration": 19.060634056727093,
+  "tokens_per_request": 375.75,
+  "tools_per_request": 0.0
+}

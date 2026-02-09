@@ -14,6 +14,7 @@ from a2a.client.client import ClientConfig
 from a2a.client import A2ACardResolver
 from a2a.types import AgentCard, Message, Part, Role, TextPart
 from metrics import MetricsCollector
+from langchain_core.messages import message_to_dict
 import time
 
 os.environ["NO_PROXY"] = "127.0.0.1,localhost"
@@ -78,8 +79,10 @@ class OrchestratorAgent:
             start = time.time()
             response = await self.model.ainvoke(messages)
             duration = time.time() - start
-            metrics.data["throughputs"].append(len(str(response)) / duration)  # tokens/sec approx
-            metrics.data["tokens_total"] += getattr(response, "tokens_used", len(str(response))) 
+            logger.info(f"---------------: {message_to_dict(response)}")
+            #metrics.data["throughputs"].append(len(str(response)) / duration)  # tokens/sec approx
+            #metrics.data["tokens_total"] += getattr(response, "tokens_used", len(str(response))) 
+            metrics.record_langgraph_invoke(response, duration)
             # ChatOllama returns a ChatResult-like object
             final = getattr(response, "content", str(response))
         return {**state, "final_response": final}
@@ -154,7 +157,7 @@ class OrchestratorGraph:
         self.httpx_client = httpx.AsyncClient(timeout=timeout_config)
     async def delegate(self, state: OrchestratorState) -> OrchestratorState:
         metrics = MetricsCollector.get_instance()
-        metrics.data["inter_agent_messages"] += 1   # already done
+        metrics.data["inter_agent_messages"] += 1   
         metrics.data["retrievals"] += 1   
         # Stub: replace with real A2A client call later
         delegated_result = "Result from delegated agent (stub)."
