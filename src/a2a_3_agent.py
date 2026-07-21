@@ -10,7 +10,7 @@ from langchain_core.runnables import RunnableConfig
 from collections.abc import AsyncIterable
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
-os.environ["NO_PROXY"] = "127.0.0.1,localhost"
+os.environ["NO_PROXY"] = "127.0.0.1,localhost,10.215.130.20"
 
 memory = MemorySaver()
 

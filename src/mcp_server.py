@@ -10,10 +10,34 @@ import atexit
 import os
 from ddgs import DDGS  
 import arxiv
+import ssl
+import urllib.request
+import requests
+from urllib3.exceptions import InsecureRequestWarning
+
+# Disable SSL verification globally
+ssl._create_default_https_context = ssl._create_unverified_context
+
+# Suppress InsecureRequestWarning when verify=False is used
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
+# Monkey-patch requests.Session to disable SSL verification by default
+_original_session_init = requests.Session.__init__
+def _patched_session_init(self, *args, **kwargs):
+    _original_session_init(self, *args, **kwargs)
+    self.verify = False
+requests.Session.__init__ = _patched_session_init
 
 
-os.environ["NO_PROXY"] = "127.0.0.1,localhost"
+os.environ["NO_PROXY"] = "127.0.0.1,localhost,10.215.130.20"
+os.environ["CURL_CA_BUNDLE"] = ""
+os.environ["REQUESTS_CA_BUNDLE"] = ""
 os.environ["PORT"] = "8000"
+os.environ["HOST"] = "0.0.0.0"
+os.environ["UVICORN_HOST"] = "0.0.0.0"
+os.environ["UVICORN_PORT"] = "8000"
+os.environ["FASTMCP_PORT"] = "8000"
+os.environ["FASTMCP_HOST"] = "0.0.0.0"
 
 logging.basicConfig(level=logging.INFO)
 
@@ -82,35 +106,83 @@ async def arxiv_search(query: str, max_results: int = 5) -> str:
         loop = asyncio.get_event_loop()
         
         def _search():
+            import xml.etree.ElementTree as ET
+            import time as _time
             try:
-                # Create arXiv client and search
-                client = arxiv.Client()
-                search = arxiv.Search(
-                    query=query,
-                    max_results=5,
-                    sort_by=arxiv.SortCriterion.SubmittedDate,
-                    sort_order=arxiv.SortOrder.Descending,
+                # Use direct HTTP request to arXiv API to control max_results exactly
+                # Use main arxiv.org domain (export.arxiv.org shares same rate limit)
+                url = (
+                    f"http://arxiv.org/api/query"
+                    f"?search_query=all:{requests.utils.quote(query)}"
+                    f"&start=0&max_results={max_results}"
+                    f"&sortBy=submittedDate&sortOrder=descending"
                 )
+                logging.info(f"📡 arXiv API request: {url}")
                 
-                results = list(client.results(search))
+                # Initial 4-second delay to respect arXiv's rate limit policy
+                _time.sleep(4)
                 
-                logging.info(f"📊 Retrieved {len(results)} results from arXiv")
+                # Retry up to 4 times with increasing delays for rate limiting
+                resp = None
+                for attempt in range(4):
+                    if attempt > 0:
+                        wait = 10 * attempt  # 10s, 20s, 30s
+                        logging.warning(f"⏳ arXiv rate limited (429), waiting {wait}s (attempt {attempt+1}/4)")
+                        _time.sleep(wait)
+                    try:
+                        resp = requests.get(url, timeout=30, verify=False, allow_redirects=False)
+                        # If redirected to HTTPS, follow manually with verify=False
+                        if resp.status_code in (301, 302, 307, 308):
+                            redirect_url = resp.headers.get("Location", url)
+                            logging.info(f"📡 Following redirect to: {redirect_url}")
+                            resp = requests.get(redirect_url, timeout=60, verify=False)
+                    except requests.exceptions.Timeout:
+                        logging.warning(f"⏳ arXiv request timed out (attempt {attempt+1}/4)")
+                        if attempt < 3:
+                            continue
+                        return "arXiv request timed out. The service may be slow or blocked by your network. Please try again later."
+                    except requests.exceptions.ConnectionError as ce:
+                        logging.warning(f"⏳ arXiv connection error (attempt {attempt+1}/4): {ce}")
+                        if attempt < 3:
+                            continue
+                        return "Cannot connect to arXiv. Check your network/proxy settings."
+                    if resp.status_code == 200:
+                        break
+                    elif resp.status_code == 429:
+                        continue
+                    else:
+                        return f"Search error: arXiv returned HTTP {resp.status_code}"
                 
-                if results:
+                if resp is None or resp.status_code != 200:
+                    return f"arXiv is rate-limiting requests. Please wait a minute and try again."
+                
+                # Parse Atom XML response
+                ns = {'atom': 'http://www.w3.org/2005/Atom'}
+                root = ET.fromstring(resp.text)
+                entries = root.findall('atom:entry', ns)
+                
+                logging.info(f"📊 Retrieved {len(entries)} results from arXiv")
+                
+                if entries:
                     formatted = []
-                    for paper in results:
-                        # Format each paper
-                        authors = ", ".join([author.name for author in paper.authors[:3]])
-                        if len(paper.authors) > 3:
+                    for entry in entries:
+                        title = entry.find('atom:title', ns).text.strip().replace('\n', ' ')
+                        summary = entry.find('atom:summary', ns).text.strip().replace('\n', ' ')[:300]
+                        published = entry.find('atom:published', ns).text[:10]
+                        authors_els = entry.findall('atom:author/atom:name', ns)
+                        authors = ", ".join([a.text for a in authors_els[:3]])
+                        if len(authors_els) > 3:
                             authors += " et al."
+                        entry_id = entry.find('atom:id', ns).text
+                        pdf_link = entry_id.replace('/abs/', '/pdf/')
                         
                         formatted.append(
-                            f"**{paper.title}**\n"
+                            f"**{title}**\n"
                             f"Authors: {authors}\n"
-                            f"Published: {paper.published.strftime('%Y-%m-%d')}\n"
-                            f"Summary: {paper.summary[:300]}...\n"
-                            f"PDF: {paper.pdf_url}\n"
-                            f"arXiv ID: {paper.entry_id}\n"
+                            f"Published: {published}\n"
+                            f"Summary: {summary}...\n"
+                            f"PDF: {pdf_link}\n"
+                            f"arXiv ID: {entry_id}\n"
                         )
                     
                     final_result = "\n---\n".join(formatted)
@@ -164,10 +236,26 @@ if __name__ == "__main__":
         setup_signal_handlers()
         logging.info("🚀 Starting MCP Research Tools server...")
         logging.info("📡 Server running on streamable-http transport")
-        logging.info("🔍 Available tools: duckduckgo_search, wikipedia_search")
+        logging.info("🔍 Available tools: duckduckgo_search, wikipedia_search, arxiv_search")
         logging.info("⏹️  Press Ctrl+C to stop the server gracefully")
         
-        mcp.run(transport="streamable-http")
+        # Run the MCP server - use uvicorn directly to bind to 0.0.0.0
+        # FastMCP's run() hardcodes 127.0.0.1, so we call uvicorn ourselves
+        import uvicorn
+        
+        try:
+            # Try getting the ASGI app from FastMCP (newer versions)
+            app = mcp.streamable_http_app()
+            uvicorn.run(app, host="0.0.0.0", port=8000)
+        except (AttributeError, TypeError):
+            # Fallback: patch uvicorn.run to inject host before FastMCP calls it
+            _original_uvicorn_run = uvicorn.run
+            def _patched_run(app, **kwargs):
+                kwargs["host"] = "0.0.0.0"
+                kwargs["port"] = 8000
+                _original_uvicorn_run(app, **kwargs)
+            uvicorn.run = _patched_run
+            mcp.run(transport="streamable-http")
         
     except KeyboardInterrupt:
         logging.info("🛑 KeyboardInterrupt received. Shutting down...")

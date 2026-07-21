@@ -13,6 +13,7 @@ class MetricsCollector:
     _lock = Lock()
 
     def __init__(self):
+        self._event_listeners: List[Any] = []
         self.reset()
 
     @classmethod
@@ -22,6 +23,29 @@ class MetricsCollector:
                 if cls._instance is None:
                     cls._instance = MetricsCollector()
         return cls._instance
+
+    def add_event_listener(self, listener):
+        """Register a callback to be notified of new metric events.
+
+        The listener is called with a dict containing:
+        timestamp, agent, event_type, details.
+        """
+        self._event_listeners.append(listener)
+
+    def remove_event_listener(self, listener):
+        """Remove a previously registered event listener."""
+        try:
+            self._event_listeners.remove(listener)
+        except ValueError:
+            pass
+
+    def _notify_listeners(self, event: dict):
+        """Notify all registered listeners of a new event."""
+        for listener in self._event_listeners:
+            try:
+                listener(event)
+            except Exception as e:
+                logger.warning(f"Event listener error: {e}")
 
     def reset(self):
         self.data = {
@@ -50,6 +74,17 @@ class MetricsCollector:
 
         if status_code >= 400:
             self.data["errors_total"] += 1
+            self._notify_listeners({
+                "agent": "Orchestrator Agent",
+                "event_type": "error",
+                "details": {"status_code": status_code, "duration": round(duration, 4)},
+            })
+        else:
+            self._notify_listeners({
+                "agent": "Orchestrator Agent",
+                "event_type": "request",
+                "details": {"status_code": status_code, "duration": round(duration, 4)},
+            })
 
     # ---------- EXECUTOR LAYER ----------
     def record_task_duration(self, duration: float):
@@ -68,6 +103,13 @@ class MetricsCollector:
 
         messages = self._normalize_messages(result)
         self.data["inter_agent_messages"] += len(messages)
+
+        if messages:
+            self._notify_listeners({
+                "agent": "Orchestrator Agent",
+                "event_type": "inter_agent_message",
+                "details": {"message_count": len(messages)},
+            })
 
         for msg in messages:
             msg_type = getattr(msg, "type", None)
@@ -127,6 +169,16 @@ class MetricsCollector:
         self.data["tokens_completion"] += completion
         self.data["tokens_total"] += total
 
+        self._notify_listeners({
+            "agent": "Orchestrator Agent",
+            "event_type": "token_usage",
+            "details": {
+                "prompt_tokens": prompt,
+                "completion_tokens": completion,
+                "total_tokens": total,
+            },
+        })
+
     # ------------------------------------------------------------------
     # Tool Calls
     # ------------------------------------------------------------------
@@ -143,6 +195,11 @@ class MetricsCollector:
 
             if name:
                 self.data["tools_used"].add(name)
+                self._notify_listeners({
+                    "agent": "Orchestrator Agent",
+                    "event_type": "tool_call",
+                    "details": {"tool_name": name},
+                })
 
     # ------------------------------------------------------------------
     # Model Info

@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-background: #0a0a0f;
+  --color-card: #1a1a2e;
+  --color-accent-cyan: #00d4ff;
+  --color-accent-green: #00ff88;
+  --color-accent-red: #ff4444;
+  --color-accent-amber: #ffaa00;
+  --color-border: rgba(255, 255, 255, 0.2);
+}
+
+body {
+  background-color: var(--color-background);
+  color: #e0e0e0;
+  font-family: var(--font-sans, 'Inter', system-ui, sans-serif);
+}
+
+.font-mono {
+  font-family: var(--font-mono, 'JetBrains Mono', 'Fira Code', monospace);
+}

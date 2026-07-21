@@ -17,7 +17,7 @@ from metrics import MetricsCollector
 from langchain_core.messages import message_to_dict
 import time
 
-os.environ["NO_PROXY"] = "127.0.0.1,localhost"
+os.environ["NO_PROXY"] = "127.0.0.1,localhost,10.215.130.20"
 logger = logging.getLogger(__name__)
 Research_agent_url = "http://localhost:9991"
 
@@ -51,13 +51,13 @@ class OrchestratorState(TypedDict):
 # ------------------------------
 class OrchestratorAgent:
     SYSTEM_INSTRUCTION = """
-    You are an orchestrator agent.
+    You are an orchestrator agent. Answer concisely and directly.
     Decide whether to answer directly or delegate to another agent.
     """
 
     def __init__(self):
-        self.llm = "gemma3:1b"
-        self.model = ChatOllama(model=self.llm, temperature=0)
+        self.llm = "mistral:latest"
+        self.model = ChatOllama(base_url="http://10.215.130.20:11434", model=self.llm, temperature=0)
         metrics = MetricsCollector.get_instance()
         metrics.data["model"] = self.llm
 
@@ -90,32 +90,28 @@ class OrchestratorAgent:
 
 async def run_a2a_with_print(client: Any, message: Any) -> str:
     """
-    Uses your exact extraction logic:
-      - iterates `async for task, event in client.send_message(message)`
-      - prints status/artifact text chunks as they arrive
-      - deduplicates with seen_content
-      - returns the concatenated text
+    Collects the final artifact from the research agent.
+    Status messages are printed for visibility but only the artifact
+    (final answer) is returned as the delegated result.
     """
     seen_content = set()
     has_content = False
-    buffer: list[str] = []
+    artifact_buffer: list[str] = []
 
     try:
         response = client.send_message(message)
 
         async for task, event in response:
-            # --- Check for status messages ---
+            # --- Print status messages for visibility but don't include in result ---
             if hasattr(event, "status") and event.status and hasattr(event.status, "message") and event.status.message:
                 for part in event.status.message.parts:
                     if hasattr(part.root, "text"):
                         content = part.root.text
                         if content and content not in seen_content:
                             print(content, end="", flush=True)
-                            buffer.append(content)
                             seen_content.add(content)
-                            has_content = True
 
-            # --- Check for singular artifact ---
+            # --- Collect artifact (final answer) into the result buffer ---
             if hasattr(event, "artifact") and event.artifact:
                 artifact = event.artifact
                 for part in artifact.parts:
@@ -123,7 +119,7 @@ async def run_a2a_with_print(client: Any, message: Any) -> str:
                         content = part.root.text
                         if content and content not in seen_content:
                             print(content, end="", flush=True)
-                            buffer.append(content)
+                            artifact_buffer.append(content)
                             seen_content.add(content)
                             has_content = True
 
@@ -135,7 +131,7 @@ async def run_a2a_with_print(client: Any, message: Any) -> str:
                             content = part.root.text
                             if content and content not in seen_content:
                                 print(content, end="", flush=True)
-                                buffer.append(content)
+                                artifact_buffer.append(content)
                                 seen_content.add(content)
                                 has_content = True
 
@@ -146,7 +142,7 @@ async def run_a2a_with_print(client: Any, message: Any) -> str:
         # Re-raise so your caller can handle it like you do elsewhere
         raise RuntimeError(f"❌ Failed to connect to agent: {e}")
 
-    return "".join(buffer).strip()
+    return "".join(artifact_buffer).strip()
 
 # ------------------------------
 # Graph

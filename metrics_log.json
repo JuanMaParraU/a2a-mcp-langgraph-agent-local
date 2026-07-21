@@ -1,22 +1,28 @@
 {
-  "model": "gemma3:1b",
-  "requests_total": 3,
+  "model": "qwen3:4b",
+  "requests_total": 2,
   "errors_total": 0,
-  "inter_agent_messages": 0,
+  "inter_agent_messages": 2,
   "tool_calls": 0,
-  "retrievals": 0,
-  "tokens_total": 587,
+  "retrievals": 2,
+  "tokens_total": 0,
   "submission_latencies": [
-    0.001280069351196289,
-    0.0022101402282714844,
-    0.00035500526428222656
+    0.0021293163299560547,
+    0.0041353702545166016
   ],
-  "throughputs": [
-    200.83338625957535
-  ],
+  "throughputs": [],
   "task_durations": [
-    2.931823253631592
+    382.19859886169434,
+    11.32895302772522
   ],
-  "avg_a2a_submission_latency": 0.00128173828125,
-  "avg_task_duration": 2.931823253631592
+  "tokens_completion": 0,
+  "latencies": [],
+  "tokens_prompt": 0,
+  "ai_messages_count": 0,
+  "reasoning_steps": 0,
+  "tools_used": [],
+  "avg_latency": 0.003132343292236328,
+  "avg_task_duration": 196.76377594470978,
+  "tokens_per_request": 0.0,
+  "tools_per_request": 0.0
 }

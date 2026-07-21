@@ -7,7 +7,7 @@ from a2a.client.client import ClientConfig
 from a2a.client import A2ACardResolver
 from a2a.types import AgentCard, Message, Part, Role, TextPart
 
-os.environ["NO_PROXY"] = "127.0.0.1,localhost"
+os.environ["NO_PROXY"] = "127.0.0.1,localhost,10.215.130.20"
 BASE_URL = "http://localhost:9990"
 
 # HTTP client timeout configuration

@@ -25,7 +25,7 @@ async def main():
 
     try:
         # Initialize the model
-        model = ChatOllama(model="mistral")  # ✅ Ensure the model is available locally
+        model = ChatOllama(base_url="http://10.215.130.20:11434", model="mistral-nemo")  # ✅ Ensure the model is available locally
         # Send a simple test prompt
         response = model.invoke("Hello!")
         print("✅ Model is reachable. Response:", response.content)
